@@ -1,0 +1,6 @@
+[submodule "atum"]
+	path = atum
+	url = git@github.com:lab11/atum.git
+[submodule "contiki"]
+	path = contiki
+	url = https://github.com/contiki-os/contiki.git
