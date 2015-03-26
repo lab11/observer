@@ -1,28 +1,36 @@
 
 #include "contiki.h"
-#include "cpu/cc2538/dev/gpio.h"
-#include "cpu/cc2538/spi-arch.h"
-#include "dev/spi.h"
+#include "sys/etimer.h"
+#include "dev/leds.h"
+
+static struct etimer periodic_timer_red;
+static struct etimer periodic_timer_green;
+static struct etimer periodic_timer_blue;
 
 /*---------------------------------------------------------------------------*/
-PROCESS(spi_process, "SPI");
-AUTOSTART_PROCESSES(&spi_process);
+PROCESS(blink_process, "Blink");
+AUTOSTART_PROCESSES(&blink_process);
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(spi_process, ev, data) {
+PROCESS_THREAD(blink_process, ev, data) {
 
 	PROCESS_BEGIN();
 
-	spi_enable();
-	spi_cs_init(GPIO_C_NUM, 0);
+	etimer_set(&periodic_timer_red, CLOCK_SECOND);
+	etimer_set(&periodic_timer_green, CLOCK_SECOND/2);
+	etimer_set(&periodic_timer_blue, CLOCK_SECOND/4);
 
 	while(1) {
 		PROCESS_YIELD();
-		char * s = "Hello World!";
-		int i = 0;
-		for(i = 0; i < strlen(s); ++i){
-      GPIO_WRITE_PIN(GPIO_C_BASE, 0x01, 0);
-			SPI_WRITE(s[i]);
-      GPIO_WRITE_PIN(GPIO_C_BASE, 0x01, 1);
+
+		if (etimer_expired(&periodic_timer_red)) {
+			leds_toggle(LEDS_RED);
+			etimer_restart(&periodic_timer_red);
+		} else if (etimer_expired(&periodic_timer_green)) {
+			leds_toggle(LEDS_GREEN);
+			etimer_restart(&periodic_timer_green);
+		} else if (etimer_expired(&periodic_timer_blue)) {
+			leds_toggle(LEDS_BLUE);
+			etimer_restart(&periodic_timer_blue);
 		}
 	}
 
