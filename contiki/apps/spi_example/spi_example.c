@@ -1,9 +1,12 @@
 #include "contiki.h"
+#include "dev/serial-line.h"
+#include <stdio.h>
 #include "sys/etimer.h"
 #include "dev/leds.h"
 #include "gpio.h"
 #include "spi-arch.h"
 #include "dev/spi.h"
+#include "usb-serial.h"
 
 static struct etimer periodic_timer_red;
 
@@ -14,7 +17,6 @@ AUTOSTART_PROCESSES(&spi_process);
 PROCESS_THREAD(spi_process, ev, data) {
   PROCESS_BEGIN();
   etimer_set(&periodic_timer_red, CLOCK_SECOND);
-  spi_enable();
   // clock high while idle, data valid on clock trailing edge
   spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
   spi_cs_init(GPIO_B_NUM, 4);
@@ -22,15 +24,21 @@ PROCESS_THREAD(spi_process, ev, data) {
     PROCESS_YIELD();
     // Send SPI message
     char * s = "Hello World!";
+    printf("this is a test\n");
+    char r[13];
     int i = 0;
     for(i = 0; i < strlen(s); ++i)
     {
       SPI_CS_CLR(GPIO_B_NUM, 4);
 
       SPI_WRITE(s[i]);
+      SPI_WAITFOREORx();
+      r[i] = SPI_RXBUF;
 
       SPI_CS_SET(GPIO_B_NUM, 4);
     }
+
+    printf("%s\n\r", r);
     // Blink LED
     if (etimer_expired(&periodic_timer_red))
     {
