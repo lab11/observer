@@ -23,22 +23,16 @@ PROCESS_THREAD(spi_process, ev, data) {
   while(1) {
     PROCESS_YIELD();
     // Send SPI message
-    char * s = "Hello World!";
-    printf("this is a test\n");
-    char r[13];
+    char * s = "HelloWorld!";
     int i = 0;
     for(i = 0; i < strlen(s); ++i)
     {
       SPI_CS_CLR(GPIO_B_NUM, 4);
-
       SPI_WRITE(s[i]);
-      SPI_WAITFOREORx();
-      r[i] = SPI_RXBUF;
-
       SPI_CS_SET(GPIO_B_NUM, 4);
     }
 
-    printf("%s\n\r", r);
+    printf("%s\n\r", s);
     // Blink LED
     if (etimer_expired(&periodic_timer_red))
     {
