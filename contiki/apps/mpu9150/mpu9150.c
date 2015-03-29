@@ -5,6 +5,8 @@
 #include "core/dev/spi.h"
 #include "cpu/cc2538/dev/gpio.h"
 #include "cpu/cc2538/dev/i2c.h"
+#include <stdio.h>
+#include "usb-serial.h"
 
 static struct etimer periodic_timer_red;
 static struct etimer periodic_timer_green;
@@ -106,7 +108,7 @@ PROCESS_THREAD(mpu9150_process, ev, data) {
 	MPU9150_writeSensor(MPU9150_ACCEL_CONFIG, 0x18);
 	int16_t currentX = 0;
 	int16_t currentY = 0;
-	//int16_t currentZ = 0;
+	int16_t currentZ = 0;
 
 	while(1) {
 		PROCESS_YIELD();
@@ -126,6 +128,8 @@ PROCESS_THREAD(mpu9150_process, ev, data) {
 		if (etimer_expired(&periodic_timer_blue)) {
 			currentX = MPU9150_readSensor(MPU9150_ACCEL_XOUT_L, MPU9150_ACCEL_XOUT_H);
 			currentY = MPU9150_readSensor(MPU9150_ACCEL_YOUT_L, MPU9150_ACCEL_YOUT_H);
+			currentZ = MPU9150_readSensor(MPU9150_ACCEL_ZOUT_L, MPU9150_ACCEL_ZOUT_H);
+
 		
 			leds_off(LEDS_ALL);
 
@@ -153,6 +157,12 @@ PROCESS_THREAD(mpu9150_process, ev, data) {
 			else {
 				//leds_on()
 			}
+
+			printf("X_ACCEL: %d\n\r", currentX);
+			printf("Y_ACCEL: %d\n\r", currentY);
+			printf("Z_ACCEL: %d\n\r\r", currentZ);
+
+
 
 			etimer_restart(&periodic_timer_blue);
 		}
