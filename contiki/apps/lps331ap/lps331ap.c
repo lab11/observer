@@ -10,8 +10,8 @@
 
 
 static struct etimer periodic_timer;
-int8_t lps331ap_read(uint8_t addr);
-void lps331ap_write(uint8_t addr, int8_t write);
+uint8_t lps331ap_read(uint8_t addr);
+void lps331ap_write(uint8_t addr, uint8_t write);
 
 /*---------------------------------------------------------------------------*/
 PROCESS(lps331ap_process, "lps331ap");
@@ -25,22 +25,26 @@ PROCESS_THREAD(lps331ap_process, ev, data) {
   spi_cs_init(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
   while(1) {
     PROCESS_YIELD();
-    lps331ap_write(LPS331AP_CTRL_REG1, 0x80);
+
+    lps331ap_ctrl_reg1_t ctrl_reg1;
+    ctrl_reg1.f.active = 1;
+    ctrl_reg1.f.odr = 7;
+    ctrl_reg1.f.bdu = 1;
+
+    lps331ap_write(LPS331AP_CTRL_REG1, ctrl_reg1.value);
+    lps331ap_write(LPS331AP_RES_CONF, 0x79);
     uint8_t who_am_i = lps331ap_read(LPS331AP_WHO_AM_I);
-    printf("hello\n");
     printf("%x\n", who_am_i);
 
-    // int8_t reg_addrs[3] = {0x28,0x29,0x2A};
-    // int pout = 0;
-    // int read = 0;
-    // read = lps331ap_read(reg_addrs[0]);
-    // pout = read;
-    // read = lps331ap_read(reg_addrs[1]);
-    // pout |= (read << 8);
-    // read = lps331ap_read(reg_addrs[2]);
-    // pout |= (read << 16);
-    // pout /= 4096;
-    // printf("pressure: %d\n", pout);
+    unsigned int pout = 0;
+    uint8_t read = 0;
+    read = lps331ap_read(LPS331AP_PRESS_POUT_XL_REH);
+    pout = read;
+    read = lps331ap_read(LPS331AP_PRESS_OUT_L);
+    pout |= (read << 8);
+    read = lps331ap_read(LPS331AP_PRESS_OUT_H);
+    pout |= (read << 16);
+    printf("pressure: %x\n", pout);
 
     if (etimer_expired(&periodic_timer))
     {
@@ -52,9 +56,9 @@ PROCESS_THREAD(lps331ap_process, ev, data) {
   PROCESS_END();
 }
 
-int8_t lps331ap_read(uint8_t addr){
+uint8_t lps331ap_read(uint8_t addr){
   addr |= LPS331AP_READ_MASK;
-  int8_t read;
+  uint8_t read;
   SPI_CS_CLR(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
   SPI_WRITE(addr);
   SPI_READ(read);
@@ -63,7 +67,7 @@ int8_t lps331ap_read(uint8_t addr){
   return read;
 }
 
-void lps331ap_write(uint8_t addr, int8_t write){
+void lps331ap_write(uint8_t addr, uint8_t write){
   SPI_CS_CLR(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
   SPI_WRITE(addr);
   SPI_WRITE(write);
