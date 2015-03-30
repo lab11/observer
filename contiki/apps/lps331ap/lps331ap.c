@@ -27,7 +27,8 @@ PROCESS_THREAD(lps331ap_process, ev, data) {
     PROCESS_YIELD();
     lps331ap_write(LPS331AP_CTRL_REG1, 0x80);
     uint8_t who_am_i = lps331ap_read(LPS331AP_WHO_AM_I);
-    printf("%x\n\r", who_am_i);
+    printf("hello\n");
+    printf("%x\n", who_am_i);
 
     // int8_t reg_addrs[3] = {0x28,0x29,0x2A};
     // int pout = 0;
@@ -57,6 +58,7 @@ int8_t lps331ap_read(uint8_t addr){
   SPI_CS_CLR(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
   SPI_WRITE(addr);
   SPI_READ(read);
+  SPI_WAITFOREOTx(); // Extra wait loop before asserting CS
   SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
   return read;
 }
