@@ -9,9 +9,9 @@
 // bit 6 disables auto incr when set
 #define SI1147_AUTO_INCR_DISABLE 0x40
 
-// arbitrary mode codes
-#define SI1147_MODE_FORCED_CONVERSION 0
-#define SI1147_MODE_AUTONOMOUS 1
+// measurement rates
+#define SI1147_FORCED_CONVERSION 0
+#define SI1147_US_PER_MEAS_RATE 31.25
 
 // I2C Registers
 #define SI1147_PART_ID 0x00

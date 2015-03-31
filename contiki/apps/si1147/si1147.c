@@ -10,7 +10,7 @@ static struct etimer periodic_timer;
 
 uint8_t g_slave_addr;
 
-void si1147_init(int8_t mode, int16_t conv_rate);
+void si1147_init(int16_t meas_rate);
 void si1147_write_reg(uint8_t reg_addr, uint8_t data);
 int8_t si1147_read_reg(uint8_t reg_addr);
 
@@ -35,7 +35,7 @@ PROCESS_THREAD(si1147_process, ev, data) {
            GPIO_C_NUM, 4, // SCL
            I2C_SCL_NORMAL_BUS_SPEED);   
   
-  si1147_init(SI1147_MODE_FORCED_CONVERSION, 0);
+  si1147_init(SI1147_FORCED_CONVERSION);
  
   // forced conversion mode is entered if either the ALS_FORCE
   // or PLS_FORCE command is sent
@@ -112,23 +112,19 @@ void si1147_set_slave_address(uint8_t addr) {
   return;
 }
 
-void si1147_init(int8_t mode, int16_t conv_rate) {
+// meas_rate:
+//  - represents the rate at which the sensor wakes up in
+//  - when non-zero, sensor is in autonomous mode
+void si1147_init(int16_t meas_rate) {
   // initialize bookkeeping
   g_slave_addr = SI1147_DEFAULT_SLAVE_ADDR;
  
   // after initialization, moves to standby mode
   // host must write 0x17 to HW_KEY for proper operation
   si1147_write_reg(SI1147_HW_KEY, 0x17); 
- 
-  if (mode == SI1147_MODE_FORCED_CONVERSION) {
-    // MEAS_RATE = 0x00 signifies forced conversion
-    si1147_write_reg(SI1147_MEAS_RATE0, 0);
-    si1147_write_reg(SI1147_MEAS_RATE1, 0);
-  } else if (mode == SI1147_MODE_AUTONOMOUS) {
-    // TODO: there is possibly more to this
-    si1147_write_reg(SI1147_MEAS_RATE0, conv_rate);
-    si1147_write_reg(SI1147_MEAS_RATE1, conv_rate >> 8);
-  }
+  
+  si1147_write_reg(SI1147_MEAS_RATE0, meas_rate);
+  si1147_write_reg(SI1147_MEAS_RATE1, meas_rate >> 8);
 
   return;
 }
