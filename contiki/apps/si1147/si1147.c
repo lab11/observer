@@ -24,6 +24,8 @@ PROCESS(si1147_process, "si1147");
 AUTOSTART_PROCESSES(&si1147_process);
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(si1147_process, ev, data) {
+  uint8_t rx;
+
   PROCESS_BEGIN();
   
   // startup time for SI1147 is 25 ms
@@ -36,6 +38,16 @@ PROCESS_THREAD(si1147_process, ev, data) {
            I2C_SCL_NORMAL_BUS_SPEED);   
   
   si1147_init(SI1147_FORCED_CONVERSION);
+ 
+  // read something, change address, try to read again 
+  rx = si1147_read_reg(SI1147_SEQ_ID);
+  if(SI1147_DBG) printf("SI1147: SEQ_ID is 0x%x\n", rx);
+
+  si1147_set_slave_address(0x40);
+  
+  rx = si1147_read_reg(SI1147_SEQ_ID);
+  if(SI1147_DBG) printf("SI1147: SEQ_ID is 0x%x\n", rx);
+
  
   // forced conversion mode is entered if either the ALS_FORCE
   // or PLS_FORCE command is sent
@@ -56,6 +68,9 @@ void si1147_write_reg(uint8_t reg_addr, uint8_t data) {
   // second byte is 0/AI/reg_address
   uint8_t tx[] = {reg_addr, data};
   
+  if (SI1147_DBG)
+    printf("si1147_write_reg: [0x%x] <- 0x%x\n", reg_addr, data);
+  
   i2c_burst_send(g_slave_addr, tx, sizeof(tx));
   return;
 }
@@ -67,6 +82,9 @@ int8_t si1147_read_reg(uint8_t reg_addr) {
 
   i2c_single_send(g_slave_addr, *tx);
   i2c_single_receive(g_slave_addr, rx);
+
+  if (SI1147_DBG)
+    printf("si1147_read_reg: [0x%x] -> 0x%x\n", reg_addr, *rx);
   return *rx;
 }
 
@@ -74,14 +92,16 @@ int8_t si1147_write_command(uint8_t data) {
   int8_t resp;
   struct etimer timer;
 
+  if (SI1147_DBG) printf("si1147_write_command: 0x%x\n", data);
+
   do {
     // 1 - write 0x00 to command
     si1147_write_reg(SI1147_COMMAND, SI1147_COMMAND_NOP);
 
     // 2 - read response and ensure 0x00
     resp = si1147_read_reg(SI1147_RESPONSE);
-    if (resp != SI1147_RESPONSE_NO_ERROR) {
-      printf("si1147_write_command(0x%x): error= 0x%x", data, resp);
+    if (SI1147_DBG && resp != SI1147_RESPONSE_NO_ERROR) {
+      printf("si1147_write_command: NOP error= 0x%x", resp);
       return -1;
     }
 
@@ -105,6 +125,13 @@ int8_t si1147_write_command(uint8_t data) {
 
 // addr must be 6 bits
 void si1147_set_slave_address(uint8_t addr) {
+  if (SI1147_DBG) {
+    printf("si1147_set_slave_address: 0x%x\n", addr);
+
+    if(addr>>6)
+      printf("si1147_set_slave_address: warning, addr is > 6 bits\n");
+  }
+  
   si1147_write_command(SI1147_COMMAND_PARAM_SET | addr);
   si1147_write_command(SI1147_COMMAND_BUSADDR);
   
@@ -116,6 +143,8 @@ void si1147_set_slave_address(uint8_t addr) {
 //  - represents the rate at which the sensor wakes up in
 //  - when non-zero, sensor is in autonomous mode
 void si1147_init(int16_t meas_rate) {
+  if(SI1147_DBG) printf("si1147_init\n");
+
   // initialize bookkeeping
   g_slave_addr = SI1147_DEFAULT_SLAVE_ADDR;
  

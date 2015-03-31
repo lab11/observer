@@ -3,6 +3,9 @@
 
 #include "sys/etimer.h"
 
+// when set, enables print statements
+#define SI1147_DBG 1
+
 #define SI1147_STARTUP_TIME 0.025*CLOCK_SECOND
 #define SI1147_DEFAULT_SLAVE_ADDR 0x60
 
