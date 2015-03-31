@@ -9,7 +9,6 @@
 static struct etimer periodic_timer;
 
 uint8_t g_slave_addr;
-uint8_t g_auto_increment; // disabled if set to 1
 
 void si1147_init(int8_t mode, int16_t conv_rate);
 void si1147_write_reg(uint8_t reg_addr, uint8_t data);
@@ -52,16 +51,18 @@ PROCESS_THREAD(si1147_process, ev, data) {
   PROCESS_END();
 }
 
+// autoincrement disable if reg_addr is anded with SI1147_AUTO_INCR_DISABLE 
 void si1147_write_reg(uint8_t reg_addr, uint8_t data) {
   // second byte is 0/AI/reg_address
-  uint8_t tx[] = {g_auto_increment & reg_addr, data};
+  uint8_t tx[] = {reg_addr, data};
   
   i2c_burst_send(g_slave_addr, tx, sizeof(tx));
   return;
 }
 
+// autoincrement disable if reg_addr is anded with SI1147_AUTO_INCR_DISABLE 
 int8_t si1147_read_reg(uint8_t reg_addr) {
-  uint8_t tx[] = {g_auto_increment & reg_addr};
+  uint8_t tx[] = {reg_addr};
   uint8_t rx[1];
 
   i2c_single_send(g_slave_addr, *tx);
@@ -114,7 +115,6 @@ void si1147_set_slave_address(uint8_t addr) {
 void si1147_init(int8_t mode, int16_t conv_rate) {
   // initialize bookkeeping
   g_slave_addr = SI1147_DEFAULT_SLAVE_ADDR;
-  g_auto_increment = SI1147_AUTO_INCR_ENABLE;
  
   // after initialization, moves to standby mode
   // host must write 0x17 to HW_KEY for proper operation

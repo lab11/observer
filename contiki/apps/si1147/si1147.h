@@ -8,7 +8,6 @@
 
 // bit 6 disables auto incr when set
 #define SI1147_AUTO_INCR_DISABLE 0x40
-#define SI1147_AUTO_INCR_ENABLE 0x00
 
 // arbitrary mode codes
 #define SI1147_MODE_FORCED_CONVERSION 0
