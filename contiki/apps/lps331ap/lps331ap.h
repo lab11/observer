@@ -41,5 +41,10 @@ typedef union lps331ap_ctrl_reg1
   } f;
 } lps331ap_ctrl_reg1_t;
 
+static lps331ap_ctrl_reg1_t lps331ap_ctrl_reg1_default = {.value = 0xF8};
+
+uint8_t lps331ap_read_byte(uint8_t addr);
+void lps331ap_write_byte(uint8_t addr, uint8_t write);
+
 
 #endif /*LPS331AP_H*/
