@@ -24,15 +24,15 @@ PROCESS_THREAD(lps331ap_process, ev, data) {
   while(1) {
     PROCESS_YIELD();
 
-    lps331ap_ctrl_reg1_t ctrl_reg1 = lps331ap_ctrl_reg1_default;
-    lps331ap_write_byte(LPS331AP_CTRL_REG1, ctrl_reg1.value);
-    lps331ap_write_byte(LPS331AP_RES_CONF, 0x79);
+    lps331ap_write_byte(LPS331AP_CTRL_REG1, lps331ap_ctrl_reg1_default.value);
+    lps331ap_write_byte(LPS331AP_CTRL_REG3, lps331ap_ctrl_reg3_default.value);
+    lps331ap_write_byte(LPS331AP_RES_CONF, LPS331AP_25_HZ_NOISE);
 
     uint8_t who_am_i = lps331ap_read_byte(LPS331AP_WHO_AM_I);
     printf("%x\n", who_am_i);
 
-    unsigned int pout = 0;
-    uint8_t read = 0;
+    int pout = 0;
+    int8_t read = 0;
     read = lps331ap_read_byte(LPS331AP_PRESS_POUT_XL_REH);
     pout = read;
     read = lps331ap_read_byte(LPS331AP_PRESS_OUT_L);
