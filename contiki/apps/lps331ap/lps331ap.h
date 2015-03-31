@@ -7,6 +7,11 @@
 #define LPS331AP_READ_MASK          0x80
 #define LPS331AP_INC_MASK           0x40
 
+#define LPS331AP_IRQ_BASE           GPIO_C_BASE
+#define LPS331AP_IRQ_PORT           GPIO_C_NUM
+#define LPS331AP_IRQ_PIN            0
+#define LPS331AP_IRQ_PIN_MASK       GPIO_PIN_MASK(LPS331AP_IRQ_PIN)
+
 // Register Mapping
 #define LPS331AP_REF_P_XL           0x08
 #define LPS331AP_REF_P_L            0x09
@@ -84,8 +89,9 @@ typedef union lps331ap_ctrl_reg3
 
 static lps331ap_ctrl_reg3_t lps331ap_ctrl_reg3_default = {.value = 0x04};
 
-uint8_t lps331ap_read_byte(uint8_t addr);
+int8_t lps331ap_read_byte(uint8_t addr);
 void lps331ap_write_byte(uint8_t addr, uint8_t write);
+void pressure_irq_handler();
 
 
 #endif /*LPS331AP_H*/
