@@ -7,12 +7,13 @@
 #include "si1147.h"
 
 static struct etimer periodic_timer;
+static struct etimer command_timer;
 
-void si1147_init(int16_t meas_rate);
+void si1147_init(uint16_t meas_rate);
 void si1147_write_reg(uint8_t reg_addr, uint8_t data);
-int8_t si1147_read_reg(uint8_t reg_addr);
+uint8_t si1147_read_reg(uint8_t reg_addr);
 
-int8_t si1147_write_command(uint8_t data);
+uint8_t si1147_write_command(uint8_t data);
 
 //TODO: error handling
 
@@ -58,7 +59,7 @@ void si1147_write_reg(uint8_t reg_addr, uint8_t data) {
 }
 
 // autoincrement disable if reg_addr is anded with SI1147_AUTO_INCR_DISABLE 
-int8_t si1147_read_reg(uint8_t reg_addr) {
+uint8_t si1147_read_reg(uint8_t reg_addr) {
   uint8_t tx[] = {reg_addr};
   uint8_t rx[1];
 
@@ -70,10 +71,9 @@ int8_t si1147_read_reg(uint8_t reg_addr) {
   return *rx;
 }
 
-int8_t si1147_write_command(uint8_t data) {
-  int8_t resp;
-  struct etimer timer;
-
+uint8_t si1147_write_command(uint8_t data) {
+  uint8_t resp;
+  
   if (SI1147_DBG) printf("si1147_write_command: 0x%x\n", data);
 
   do {
@@ -93,11 +93,11 @@ int8_t si1147_write_command(uint8_t data) {
     // 4 - read response and verify nonzero (unneccessary if RESET)
     if (data == SI1147_COMMAND_RESET) return 0;
     
-    etimer_set(&timer, SI1147_STARTUP_TIME);
+    etimer_set(&command_timer, SI1147_STARTUP_TIME);
     do {
       resp = si1147_read_reg(SI1147_RESPONSE);
       // 5 - goto 4 if response 0x00
-    } while (resp == 0 && !etimer_expired(&periodic_timer));
+    } while (resp == 0 && !etimer_expired(&command_timer));
 
     // 6 - if 25ms pass, goto 1
   } while (resp == 0);
@@ -105,7 +105,10 @@ int8_t si1147_write_command(uint8_t data) {
   return 0;
 }
 
-void si1147_init(int16_t meas_rate) {
+// meas_rate:
+//  - represents the rate at which the sensor wakes up to take measurements
+//  - when non-zero, sensor is in autonomous mode
+void si1147_init(uint16_t meas_rate) {
   if(SI1147_DBG) printf("si1147_init\n");
  
   // after initialization, moves to standby mode
