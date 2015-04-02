@@ -9,17 +9,6 @@
 static struct etimer periodic_timer;
 static struct etimer command_timer;
 
-void si1147_init(uint16_t meas_rate);
-void si1147_write_reg(uint8_t reg_addr, uint8_t data);
-uint8_t si1147_read_reg(uint8_t reg_addr);
-
-uint8_t si1147_write_command(uint8_t data);
-void si1147_write_param(uint8_t param, uint8_t data);
-uint8_t si1147_read_param(uint8_t param);
-
-void si1147_ALS_enable();
-void si1147_ALS_force(si1147_als_data *data);
-
 //TODO: error handling
 
 /*---------------------------------------------------------------------------*/
