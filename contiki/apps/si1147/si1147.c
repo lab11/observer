@@ -14,6 +14,8 @@ void si1147_write_reg(uint8_t reg_addr, uint8_t data);
 uint8_t si1147_read_reg(uint8_t reg_addr);
 
 uint8_t si1147_write_command(uint8_t data);
+void si1147_write_param(uint8_t param, uint8_t data);
+uint8_t si1147_read_param(uint8_t param);
 
 //TODO: error handling
 
@@ -103,6 +105,20 @@ uint8_t si1147_write_command(uint8_t data) {
   } while (resp == 0);
 
   return 0;
+}
+
+void si1147_write_param(uint8_t param, uint8_t data) {
+  si1147_write_reg(SI1147_PARAM_WR, data);
+  // tell to write PARAM_WR to SI1147_PARAM_I2C_ADDR
+  si1147_write_command(SI1147_COMMAND_PARAM_SET | param);
+
+  return;
+}
+
+uint8_t si1147_read_param(uint8_t param) {
+  // tell to write parameter to PARAM_RD
+  si1147_write_command(SI1147_COMMAND_PARAM_QUERY | param);
+  return si1147_read_reg(SI1147_PARAM_RD);
 }
 
 // meas_rate:
