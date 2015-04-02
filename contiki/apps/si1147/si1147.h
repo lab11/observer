@@ -4,13 +4,15 @@
 #include "sys/etimer.h"
 
 // when set, enables print statements
-#define SI1147_DBG 1
+#define SI1147_DBG 0
 
 #define SI1147_STARTUP_TIME 0.025*CLOCK_SECOND
 #define SI1147_DEFAULT_SLAVE_ADDR 0x60
 
 // bit 6 disables auto incr when set
 #define SI1147_AUTO_INCR_DISABLE 0x40
+#define SI1147_PS_ENABLE 0x07
+#define SI1147_ALS_ENABLE 0xF0
 
 // measurement rates
 #define SI1147_FORCED_CONVERSION 0
@@ -129,5 +131,21 @@
 #define SI1147_PARAM_ALS_IR_ADC_COUNTER 0x1D
 #define SI1147_PARAM_ALS_IR_ADC_GAIN 0x1E
 #define SI1147_PARAM_ALS_IR_ADC_MISC 0x1F
+
+typedef union si1147_uint16
+{
+  uint16_t val;
+  struct {
+    uint8_t lo;
+    uint8_t hi;
+  } b;
+} si1147_uint16_t;
+
+typedef struct si1147_als_data
+{
+  si1147_uint16_t vis;
+  si1147_uint16_t ir;
+  si1147_uint16_t aux;
+} si1147_als_data;
 
 #endif /*SI1147_H*/

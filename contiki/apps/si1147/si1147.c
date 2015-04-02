@@ -17,6 +17,9 @@ uint8_t si1147_write_command(uint8_t data);
 void si1147_write_param(uint8_t param, uint8_t data);
 uint8_t si1147_read_param(uint8_t param);
 
+void si1147_ALS_enable();
+void si1147_ALS_force(si1147_als_data *data);
+
 //TODO: error handling
 
 /*---------------------------------------------------------------------------*/
@@ -38,12 +41,16 @@ PROCESS_THREAD(si1147_process, ev, data) {
            I2C_SCL_NORMAL_BUS_SPEED);   
   
   si1147_init(SI1147_FORCED_CONVERSION);
-  
+
   etimer_set(&periodic_timer, CLOCK_SECOND);
  
   while(1) {
     PROCESS_YIELD();
-    printf("hello world\n");
+    
+    if (etimer_expired(&periodic_timer)) {
+      leds_toggle(LEDS_RED);
+      etimer_restart(&periodic_timer);
+    }
   }
   PROCESS_END();
 }
@@ -134,5 +141,23 @@ void si1147_init(uint16_t meas_rate) {
   si1147_write_reg(SI1147_MEAS_RATE0, meas_rate);
   si1147_write_reg(SI1147_MEAS_RATE1, meas_rate >> 8);
 
+  return;
+}
+
+void si1147_ALS_enable() {
+  si1147_write_param(SI1147_PARAM_CHLIST, SI1147_ALS_ENABLE);
+}
+
+// caller mus allocate rx_data as 6 bytes
+void si1147_ALS_force(si1147_als_data *data) {
+  si1147_write_command(SI1147_COMMAND_ALS_FORCE);
+ 
+  data->vis.b.lo = si1147_read_reg(SI1147_ALS_VIS_DATA0);
+  data->vis.b.hi = si1147_read_reg(SI1147_ALS_VIS_DATA1);
+  data->ir.b.lo = si1147_read_reg(SI1147_ALS_IR_DATA0);
+  data->ir.b.hi = si1147_read_reg(SI1147_ALS_IR_DATA1);
+  data->aux.b.lo = si1147_read_reg(SI1147_AUX_DATA0);
+  data->aux.b.hi = si1147_read_reg(SI1147_AUX_DATA1);
+  
   return;
 }
