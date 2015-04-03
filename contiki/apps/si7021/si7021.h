@@ -32,6 +32,10 @@ static struct etimer periodic_timer_blue;
 #define Si7021_READ_FIRMWARE_REVISION1 		0x84
 #define Si7021_READ_FIRMWARE_REVISION2 		0xB8
 
+typedef enum {TEMP_HOLD, TEMP_NOHOLD, TEMP_READ_FROM_RH} TEMP_READ_t;
+typedef enum {RH_HOLD, RH_NOHOLD} HUMD_READ_t;
+
+
 // These are for the user registers
 #define Si7021_RESOLUTION_R12_T14			0x00	// R/W
 #define Si7021_RESOLUTION_R08_T12			0x01	// R/W

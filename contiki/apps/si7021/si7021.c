@@ -11,35 +11,66 @@ static struct etimer periodic_timer_green;
 static struct etimer periodic_timer_blue;
 
 
-// writes data to register reg_addr on the cc2538
-void Si7021_writeSensor(uint8_t reg_addr, uint8_t data) {
-
-	uint8_t transmit_bufL[] = {reg_addr, data};
-	i2c_burst_send(Si7021_SLAVE_ADDRESS , transmit_bufL, sizeof(transmit_bufL));
-
-}
-
 // reads from register reg_addrL and reg_addrH on the cc2538
 // the sensor data of the Si7021 are 16bits so you have to read the lower and upper 8bits separately
 // to read from a specific register, write the address of the register you want to read to the slave
 // then read from slave device
-int Si7021_readSensor(uint8_t reg_addr) {
+double Si7021_readTemp(TEMP_READ_t read_type) {
 
+	uint8_t command;
 
-	uint8_t transmit_bufBase[] = {reg_addr};
+	//Assign the command to be sent to the slave address
+	if(read_type == TEMP_HOLD)
+		command = Si7021_TEMP_MEASURE_HOLD;
+	else if(read_type == TEMP_NOHOLD)
+		command = Si7021_TEMP_MEASURE_NOHOLD;
+	else 
+		command = Si7021_READ_TEMP_FROM_PREV_HUMD;
+
+	uint8_t transmit_bufBase[] = {command};
 	uint8_t receive_bufBase[2];
 	i2c_single_send(Si7021_SLAVE_ADDRESS, *transmit_bufBase);
 	i2c_burst_receive(Si7021_SLAVE_ADDRESS, receive_bufBase, 2);
 
 	uint16_t L = receive_bufBase[0];
 	uint16_t H = receive_bufBase[1];
+	double temperature = (((H << 8) + L) * 175.72) / 65536 - 46.85;
 
-	return (int16_t)((H<<8) + L);
+	return temperature;
 }
 
-int Si7021_read_userreg(uint8_t reg_addr) {
+double Si7021_readHumd(HUMD_READ_t read_type) {
 
-	uint8_t transmit_bufBase[] = {reg_addr};
+	uint8_t command;
+
+	if(read_type == RH_HOLD)
+		command = Si7021_HUMD_MEASURE_HOLD;
+	else
+		command = Si7021_HUMD_MEASURE_NOHOLD;
+
+	uint8_t transmit_bufBase[] = {command};
+	uint8_t receive_bufBase[2];
+	i2c_single_send(Si7021_SLAVE_ADDRESS, *transmit_bufBase);
+	i2c_burst_receive(Si7021_SLAVE_ADDRESS, receive_bufBase, 2);
+
+	uint16_t L = receive_bufBase[0];
+	uint16_t H = receive_bufBase[1];
+	double humidity = (((H << 8) + L) * 125) / 65536 - 6;
+
+	return humidity;
+
+
+}
+
+void Si7021_write_userreg(uint8_t data){
+	uint8_t transmit_bufBase[] = {Si7021_SLAVE_ADDRESS, Si7021_WRITE_USER_REG, data};
+	i2c_burst_send(Si7021_SLAVE_ADDRESS, transmit_bufBase, sizeof(transmit_bufBase));
+
+}
+
+int Si7021_read_userreg() {
+
+	uint8_t transmit_bufBase[] = {Si7021_READ_USER_REG};
 	uint8_t receive_bufBase[1];
 	i2c_single_send(Si7021_SLAVE_ADDRESS, *transmit_bufBase);
 	i2c_single_receive(Si7021_SLAVE_ADDRESS, receive_bufBase);
@@ -47,9 +78,24 @@ int Si7021_read_userreg(uint8_t reg_addr) {
 	return *receive_bufBase;
 }
 
-void Si7021_write_userreg(uint8_t reg_addr, uint8_t data){
-	uint8_t transmit_bufBase[] = {reg_addr, data};
+double Si7021_read_electronicID() {
+	double ID = 0;
+
+	uint8_t transmit_bufBase[] = {Si7021_READ_ELEC_ID_FIRST_BYTE1, Si7021_READ_ELEC_ID_FIRST_BYTE2};
+	uint8_t receive_bufBase[8];
 	i2c_burst_send(Si7021_SLAVE_ADDRESS, transmit_bufBase, sizeof(transmit_bufBase));
+	i2c_burst_receive(Si7021_SLAVE_ADDRESS, receive_bufBase, 8);
+
+	//ID = (receive_bufBase[6] << 32) + (receive_bufBase[4] << 40) + (receive_bufBase[2] << 48) + (receive_bufBase[0] << 56);
+
+	uint8_t transmit_bufBase2[] = {Si7021_READ_ELEC_ID_LAST_BYTE1, Si7021_READ_ELEC_ID_LAST_BYTE2};
+	uint8_t receive_bufBase2[8];
+	i2c_burst_send(Si7021_SLAVE_ADDRESS, transmit_bufBase2, sizeof(transmit_bufBase2));
+	i2c_burst_receive(Si7021_SLAVE_ADDRESS, receive_bufBase2, 8);
+
+	ID += ((receive_bufBase2[6]) + (receive_bufBase2[4] << 8) + (receive_bufBase2[2] << 16) + (receive_bufBase2[0] << 24));
+
+	return ID; 
 }
 
 
@@ -69,15 +115,7 @@ PROCESS_THREAD(si7021_process, ev, data) {
 	i2c_init(GPIO_C_NUM, 5, GPIO_C_NUM, 4, I2C_SCL_NORMAL_BUS_SPEED);
 	i2c_master_enable();
 	i2c_set_frequency(I2C_SCL_NORMAL_BUS_SPEED);
-
-	// Clear sleep bit to start sensor
-	MPU9150_writeSensor(MPU9150_PWR_MGMT_1, 0x00);
-
-	// ACCEL CONFIG
-	MPU9150_writeSensor(MPU9150_ACCEL_CONFIG, 0x18);
-	int16_t currentX = 0;
-	int16_t currentY = 0;
-	//int16_t currentZ = 0;
+	Si7021_write_userreg(Si7021_RESOLUTION_R12_T14 | Si7021_HEATER_DISABLE);
 
 	while(1) {
 		PROCESS_YIELD();
@@ -93,19 +131,28 @@ PROCESS_THREAD(si7021_process, ev, data) {
 			etimer_restart(&periodic_timer_blue);
 		}
 		*/
+
 		
 		if (etimer_expired(&periodic_timer_blue)) {
-			currentX = MPU9150_readSensor(MPU9150_ACCEL_XOUT_L, MPU9150_ACCEL_XOUT_H);
-			currentY = MPU9150_readSensor(MPU9150_ACCEL_YOUT_L, MPU9150_ACCEL_YOUT_H);
-		
-			leds_off(LEDS_ALL);
+			double temp_nohold = Si7021_readTemp(TEMP_NOHOLD);
+			double temp_hold = Si7021_readTemp(TEMP_HOLD);
 
-			if (currentY <= 750 && currentY >= -750) {
+			double humidity_hold = Si7021_readHumd(RH_HOLD);
+			double humidity_nohold = Si7021_readHumd(RH_NOHOLD);
+
+			double temp_fromRH = Si7021_readTemp(TEMP_READ_FROM_RH);
+
+			//printf("temp_hold: %f\n", temp_hold);
+
+		
+			leds_on(LEDS_ALL);
+
+			if (temp_hold == temp_nohold) {
 				//leds_off(LEDS_RED);
 				leds_on(LEDS_GREEN);
 				//leds_off(LEDS_BLUE);
 			}
-			else if (currentY > 750) {
+			else if (temp_hold == temp_fromRH) {
 				leds_on(LEDS_RED);
 				//leds_off(LEDS_GREEN);
 				//leds_off(LEDS_BLUE);
@@ -116,13 +163,15 @@ PROCESS_THREAD(si7021_process, ev, data) {
 				leds_on(LEDS_BLUE);
 			}
 
-			if (currentX <= 750 && currentX >= -750) {
+			if (temp_hold >= 100) {
+				leds_on(LEDS_ALL);
 			}
-			else if (currentX > 750) {
-				leds_on(LEDS_RED);
-			}
-			else {
-				//leds_on()
+			/*else {
+				leds_off(LEDS_ALL);
+			}*/
+			
+			if(humidity_hold == humidity_nohold){
+				leds_toggle(LEDS_RED);
 			}
 
 			etimer_restart(&periodic_timer_blue);
