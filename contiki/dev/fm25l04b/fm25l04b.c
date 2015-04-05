@@ -34,7 +34,7 @@ fm25l04b_init()
   GPIO_SET_PIN(GPIO_PORT_TO_BASE(FM25L04B_WP_N_PORT_NUM),
                GPIO_PIN_MASK(FM25L04B_WP_N_PIN));
 
-  spi_cs_init(FM25L04B_CS_N_PORT_NUM, FM25L04B_CS_N_PIN);
+  spix_cs_init(FM25L04B_CS_N_PORT_NUM, FM25L04B_CS_N_PIN);
   SPI_CS_SET(FM25L04B_CS_N_PORT_NUM, FM25L04B_CS_N_PIN);
 }
 
@@ -53,7 +53,7 @@ fm25l04b_read(uint16_t address, uint16_t len, uint8_t *buf)
   uint16_t i;
   uint16_t current_address = address;
 
-  spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+  spix_set_mode(SPI_CONF_DEFAULT_INSTANCE, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 
   SPI_CS_CLR(FM25L04B_CS_N_PORT_NUM, FM25L04B_CS_N_PIN);
 
@@ -86,7 +86,7 @@ fm25l04b_write(uint16_t address, uint16_t len, uint8_t *buf)
 {
   uint16_t i;
 
-  spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+  spix_set_mode(SPI_CONF_DEFAULT_INSTANCE, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 
 
   SPI_CS_CLR(FM25L04B_CS_N_PORT_NUM, FM25L04B_CS_N_PIN);
