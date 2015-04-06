@@ -6,8 +6,8 @@
 #define MPU9250_I2C_ADDRESS  0x69;
 
 // SPI chipselect port and pin
-#define MPU9250_CS_PORT GPIO_C_NUM
-#define MPU9250_CS_PIN 3
+#define MPU9250_CS_PORT           GPIO_C_NUM
+#define MPU9250_CS_PIN			  1
 
 
 // Register names according to the datasheet.
@@ -126,15 +126,25 @@
 // writes data to register reg_addr
 void MPU9250_writeSensor(uint8_t reg_addr, uint8_t data) {
 
-	//uint8_t transmit_buf[] = {reg_addr, data};
-	//i2c_burst_send(TARGET_ADDRESS, transmit_buf, sizeof(transmit_buf));
+	/*SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+    SPI_WRITE(reg_addr);
+    SPI_WRITE(data);
+    SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);*/
+    //SPIX_FLUSH(0);
+    SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
-	for(int i = 0; i < sizeof(transmit_buf); ++i) {
-		SPI_CS_CLR(GPIO_B_NUM, );
-	    SPI_WRITE(transmit_buf[i]);
-	    SPI_CS_SET(GPIO_B_NUM, 4);
-	}
+    SPIX_WAITFORTxREADY(0);
+    SPIX_BUF(0) = reg_addr;
+	SPIX_WAITFOREOTx(0);
 
+	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
+
+}
+
+void read_slave(uint8_t *data) {
+	SPI_RXBUF = 0; \
+    SPI_WAITFOREORx(); \
+    *data = SPI_RXBUF; \
 }
 
 
@@ -146,37 +156,25 @@ void MPU9250_writeSensor(uint8_t reg_addr, uint8_t data) {
 */
 int16_t MPU9250_readSensor(uint8_t reg_addrL, uint8_t reg_addrH) {
 
-	/*uint8_t transmit_bufL[] = {reg_addrL};
-	uint8_t receive_bufL[1];
+	uint8_t readL;
+	uint8_t readH;
 
-	// tell the cc2538 which register you want to read from
-	i2c_single_send(TARGET_ADDRESS, *transmit_bufL);
-	// the following read will be the value from the register you wrote to the slave about
-	i2c_single_receive(TARGET_ADDRESS, receive_bufL);
+	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+	SPI_WRITE(reg_addrL);
+	SPI_READ(readL);
+	SPI_WAITFOREOTx(); // Extra wait loop before asserting CS
+	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
-	uint8_t transmit_bufH[] = {reg_addrH};
-	uint8_t receive_bufH[1];
+	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+	SPI_WRITE(reg_addrH);
+	SPI_READ(readH);
+	SPI_WAITFOREOTx(); // Extra wait loop before asserting CS
+	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
-	// tell the cc2538 which register you want to read from
-	i2c_single_send(TARGET_ADDRESS, *transmit_bufH);
-	// the following read will be the value from the register you wrote to the slave about
-	i2c_single_receive(TARGET_ADDRESS, receive_bufH);
-
-	// concatenate the lower and upper 8bits to a signed 16 bit integer
-	uint16_t L = receive_bufL[0];
-	uint16_t H = receive_bufH[0];
-	*/
-
-	uint8_t transmit_bufBase[] = {reg_addrH}; // upper bits is at lower address
-	uint8_t receive_bufBase[2];
-	i2c_single_send(TARGET_ADDRESS, *transmit_bufBase);
-	i2c_burst_receive(TARGET_ADDRESS, receive_bufBase, 2);
-
-	uint16_t L = receive_bufBase[1];
-	uint16_t H = receive_bufBase[0];
+	uint16_t L = readL;
+	uint16_t H = readH;
 
 	return (int16_t)((H<<8) + L);
-
 
 }
 
