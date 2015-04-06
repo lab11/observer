@@ -9563,7 +9563,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <label x="38.1" y="149.86" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
-<net name="SDA" class="0">
+<net name="EEPROM_SDA" class="0">
 <segment>
 <pinref part="P9/P8" gate="G$1" pin="I2C2_SDA"/>
 <wire x1="106.68" y1="132.08" x2="109.22" y2="132.08" width="0.2032" layer="91"/>
@@ -9575,7 +9575,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <label x="33.02" y="58.42" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
-<net name="SCL" class="0">
+<net name="EEPROM_SCL" class="0">
 <segment>
 <pinref part="P9/P8" gate="G$1" pin="I2C2_SCL"/>
 <wire x1="43.18" y1="132.08" x2="38.1" y2="132.08" width="0.2032" layer="91"/>
