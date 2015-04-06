@@ -105,7 +105,9 @@ main(void)
 
   watchdog_init();
   //button_sensor_init();
-  spi_init();
+  spix_init(SPI0_INSTANCE);
+//  spix_init(SPI1_INSTANCE);
+  
   fm25l04b_init();
   rv3049_init();
 

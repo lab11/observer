@@ -185,13 +185,35 @@
  * @{
  */
 #define SPI_CONF_DEFAULT_INSTANCE 0
-#define SPI0_CLK_PORT             GPIO_C_NUM
-#define SPI0_CLK_PIN              6
-#define SPI0_TX_PORT            GPIO_C_NUM // MOSI
-#define SPI0_TX_PIN             7
-#define SPI0_RX_PORT            GPIO_B_NUM // MISO
-#define SPI0_RX_PIN             0
+#define SPI0_INSTANCE             0
+#define SPI0_CLK_PORT             GPIO_A_NUM //C
+#define SPI0_CLK_PIN              5 //6
+#define SPI0_TX_PORT              GPIO_A_NUM // MOSI C
+#define SPI0_TX_PIN               4 //7
+#define SPI0_RX_PORT              GPIO_A_NUM // MISO B
+#define SPI0_RX_PIN               3 //0
 
+// SPI1 is a slave
+#define SPI1_INSTANCE             1
+#define SPI1_CLK_PORT             GPIO_A_NUM
+#define SPI1_CLK_PIN              5
+#define SPI1_TX_PORT              GPIO_A_NUM // MISO
+#define SPI1_TX_PIN               4
+#define SPI1_RX_PORT              GPIO_A_NUM // MOSI
+#define SPI1_RX_PIN               3
+
+/** @} */
+/*---------------------------------------------------------------------------*/
+/**
+ * \name BeagleBone Black configuration
+ *
+ * These values configure which CC2538 pins to use for the BBB lines.
+ * @{
+ */
+#define BBB_CS_PORT_NUM           GPIO_A_NUM
+#define BBB_CS_PIN                6
+#define BBB_INT_N_PORT_NUM        GPIO_A_NUM
+#define BBB_INT_N_PIN             7
 
 /** @} */
 /*---------------------------------------------------------------------------*/
