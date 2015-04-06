@@ -425,6 +425,42 @@
 <rectangle x1="1.016" y1="1.016" x2="1.524" y2="1.524" layer="51" rot="R270"/>
 <circle x="-0.054" y="58.728" radius="0.359209375" width="0.127" layer="21"/>
 </package>
+<package name="PCM1862">
+<wire x1="-2.25" y1="-3.95" x2="2.25" y2="-3.95" width="0.127" layer="21"/>
+<wire x1="2.25" y1="-3.95" x2="2.25" y2="3.95" width="0.127" layer="21"/>
+<wire x1="2.25" y1="3.95" x2="-2.25" y2="3.95" width="0.127" layer="21"/>
+<wire x1="-2.25" y1="-3.95" x2="-2.25" y2="3.95" width="0.127" layer="21"/>
+<smd name="VINL2/VIN1M" x="-2.52" y="3.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="VINL1/VIN1P" x="-2.52" y="2.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="VINR2/VIN2M" x="-2.52" y="3" dx="1.55" dy="0.27" layer="1"/>
+<smd name="VINR1/VIN2P" x="-2.52" y="2" dx="1.55" dy="0.27" layer="1"/>
+<smd name="MICBIAS" x="-2.52" y="1.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="VREF" x="-2.52" y="1" dx="1.55" dy="0.27" layer="1"/>
+<smd name="AGND" x="-2.52" y="0.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="AVDD" x="-2.52" y="0" dx="1.55" dy="0.27" layer="1"/>
+<smd name="XO" x="-2.52" y="-0.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="LD0" x="-2.52" y="-1.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="XI" x="-2.52" y="-1" dx="1.55" dy="0.27" layer="1"/>
+<smd name="DGND" x="-2.52" y="-2" dx="1.55" dy="0.27" layer="1"/>
+<smd name="DVDD" x="-2.52" y="-2.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="IOVDD" x="-2.52" y="-3" dx="1.55" dy="0.27" layer="1"/>
+<smd name="SCKI(3.3V)" x="-2.52" y="-3.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="VINR3/VIN3P" x="2.52" y="3.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="VINR4/VIN3M" x="2.52" y="2.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="VINL3/VIN4P" x="2.52" y="3" dx="1.55" dy="0.27" layer="1"/>
+<smd name="VINL4/VIN4M" x="2.52" y="2" dx="1.55" dy="0.27" layer="1"/>
+<smd name="MD0" x="2.52" y="1.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="MS/AD" x="2.52" y="1" dx="1.55" dy="0.27" layer="1"/>
+<smd name="MC/SCL" x="2.52" y="0.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="MOSI/SDA" x="2.52" y="0" dx="1.55" dy="0.27" layer="1"/>
+<smd name="MISO/GPIO0" x="2.52" y="-0.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="GPIO2/INTB/DMCLK" x="2.52" y="-1.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="GPIO0/INTA" x="2.52" y="-1" dx="1.55" dy="0.27" layer="1"/>
+<smd name="GPIO3/INTC" x="2.52" y="-2" dx="1.55" dy="0.27" layer="1"/>
+<smd name="DOUT" x="2.52" y="-2.5" dx="1.55" dy="0.27" layer="1"/>
+<smd name="BCK" x="2.52" y="-3" dx="1.55" dy="0.27" layer="1"/>
+<smd name="LRCK" x="2.52" y="-3.5" dx="1.55" dy="0.27" layer="1"/>
+</package>
 </packages>
 <symbols>
 <symbol name="MAX4466">
@@ -520,6 +556,42 @@
 <pin name="GND4" x="-5.08" y="2.54" length="middle"/>
 <pin name="GND5" x="58.42" y="2.54" length="middle" rot="R180"/>
 <text x="0" y="63.5" size="1.778" layer="95">P9</text>
+</symbol>
+<symbol name="PCM1862">
+<wire x1="-18" y1="-25" x2="-18" y2="25" width="0.254" layer="94"/>
+<wire x1="-18" y1="25" x2="18" y2="25" width="0.254" layer="94"/>
+<wire x1="18" y1="25" x2="18" y2="-25" width="0.254" layer="94"/>
+<wire x1="18" y1="-25" x2="-18" y2="-25" width="0.254" layer="94"/>
+<pin name="IOVDD" x="-23.2" y="-18" length="middle"/>
+<pin name="SCKI(3.3V)" x="-23.2" y="-21" length="middle"/>
+<pin name="LDO" x="-23.2" y="-9" length="middle"/>
+<pin name="VINL2/VIN1M" x="-23.2" y="21" length="middle"/>
+<pin name="VINR2/VIN2M" x="-23.2" y="18" length="middle"/>
+<pin name="VINL1/VIN1P" x="-23.2" y="15" length="middle"/>
+<pin name="DGND" x="-23.2" y="-12" length="middle"/>
+<pin name="VINR1/VIN2P" x="-23.3" y="12" length="middle"/>
+<pin name="MICBIAS" x="-23.2" y="9" length="middle"/>
+<pin name="AVDD" x="-23.2" y="0" length="middle"/>
+<pin name="VREF" x="-23.2" y="6" length="middle"/>
+<pin name="DVDD" x="-23.2" y="-15" length="middle"/>
+<pin name="AGND" x="-23.2" y="3" length="middle"/>
+<pin name="XO" x="-23.2" y="-3" length="middle"/>
+<pin name="XI" x="-23.2" y="-6" length="middle"/>
+<pin name="VINL3/VIN4P" x="23.1" y="18" length="middle" rot="R180"/>
+<pin name="VINR3/VIN3P" x="23.1" y="21" length="middle" rot="R180"/>
+<pin name="MD0" x="23.1" y="9" length="middle" rot="R180"/>
+<pin name="LRCK" x="23.1" y="-21" length="middle" rot="R180"/>
+<pin name="BCK" x="23.1" y="-18" length="middle" rot="R180"/>
+<pin name="DOUT" x="23.1" y="-15" length="middle" rot="R180"/>
+<pin name="VINL4/VIN4M" x="23.1" y="12" length="middle" rot="R180"/>
+<pin name="GPIO3/INTC" x="23.2" y="-12" length="middle" rot="R180"/>
+<pin name="GPIO2/INTB/DMCLK" x="23.1" y="-9" length="middle" rot="R180"/>
+<pin name="MOSI/SDA" x="23.1" y="0" length="middle" rot="R180"/>
+<pin name="GPIO1/INTA" x="23.1" y="-6" length="middle" rot="R180"/>
+<pin name="VINR4/VIN3M" x="23.1" y="15" length="middle" rot="R180"/>
+<pin name="MISO/GPIO0" x="23.1" y="-3" length="middle" rot="R180"/>
+<pin name="MC/SCL" x="23.1" y="3" length="middle" rot="R180"/>
+<pin name="MS/AD" x="23.1" y="6" length="middle" rot="R180"/>
 </symbol>
 </symbols>
 <devicesets>
@@ -617,6 +689,50 @@ Thru hole 2.54mm spacing with 9.7mm diameter</description>
 <connect gate="G$1" pin="VADC" pad="P9_32"/>
 <connect gate="G$1" pin="VDD_5V0" pad="P9_5"/>
 <connect gate="G$1" pin="VDD_5V1" pad="P9_6"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="PCM1862">
+<gates>
+<gate name="G$1" symbol="PCM1862" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="PCM1862">
+<connects>
+<connect gate="G$1" pin="AGND" pad="AGND"/>
+<connect gate="G$1" pin="AVDD" pad="AVDD"/>
+<connect gate="G$1" pin="BCK" pad="BCK"/>
+<connect gate="G$1" pin="DGND" pad="DGND"/>
+<connect gate="G$1" pin="DOUT" pad="DOUT"/>
+<connect gate="G$1" pin="DVDD" pad="DVDD"/>
+<connect gate="G$1" pin="GPIO1/INTA" pad="GPIO0/INTA"/>
+<connect gate="G$1" pin="GPIO2/INTB/DMCLK" pad="GPIO2/INTB/DMCLK"/>
+<connect gate="G$1" pin="GPIO3/INTC" pad="GPIO3/INTC"/>
+<connect gate="G$1" pin="IOVDD" pad="IOVDD"/>
+<connect gate="G$1" pin="LDO" pad="LD0"/>
+<connect gate="G$1" pin="LRCK" pad="LRCK"/>
+<connect gate="G$1" pin="MC/SCL" pad="MC/SCL"/>
+<connect gate="G$1" pin="MD0" pad="MD0"/>
+<connect gate="G$1" pin="MICBIAS" pad="MICBIAS"/>
+<connect gate="G$1" pin="MISO/GPIO0" pad="MISO/GPIO0"/>
+<connect gate="G$1" pin="MOSI/SDA" pad="MOSI/SDA"/>
+<connect gate="G$1" pin="MS/AD" pad="MS/AD"/>
+<connect gate="G$1" pin="SCKI(3.3V)" pad="SCKI(3.3V)"/>
+<connect gate="G$1" pin="VINL1/VIN1P" pad="VINL1/VIN1P"/>
+<connect gate="G$1" pin="VINL2/VIN1M" pad="VINL2/VIN1M"/>
+<connect gate="G$1" pin="VINL3/VIN4P" pad="VINL3/VIN4P"/>
+<connect gate="G$1" pin="VINL4/VIN4M" pad="VINL4/VIN4M"/>
+<connect gate="G$1" pin="VINR1/VIN2P" pad="VINR1/VIN2P"/>
+<connect gate="G$1" pin="VINR2/VIN2M" pad="VINR2/VIN2M"/>
+<connect gate="G$1" pin="VINR3/VIN3P" pad="VINR3/VIN3P"/>
+<connect gate="G$1" pin="VINR4/VIN3M" pad="VINR4/VIN3M"/>
+<connect gate="G$1" pin="VREF" pad="VREF"/>
+<connect gate="G$1" pin="XI" pad="XI"/>
+<connect gate="G$1" pin="XO" pad="XO"/>
 </connects>
 <technologies>
 <technology name=""/>
