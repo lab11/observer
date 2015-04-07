@@ -2608,7 +2608,9 @@ This Sunstone Circuits 2 Layer .DRU has been set to cover our minimum requiremen
 <attribute name="VALUE" x="28.956" y="51.308" size="1.016" layer="27" font="vector" ratio="12" rot="R180" align="bottom-center"/>
 </element>
 <element name="LOGO2" library="logos" package="UMICH_SOLID_50MIL" value="UMICH_SOLID_TINY" x="26.416" y="66.802"/>
-<element name="P9/P8" library="observer" package="BBB_HEADERS" value="BBB_HEADER" x="0.762" y="8.89"/>
+<element name="P9/P8" library="observer" package="BBB_HEADERS" value="BBB_HEADER" x="0.762" y="8.89" smashed="yes">
+<attribute name="VALUE" x="0.762" y="67.945" size="1.27" layer="27" font="vector"/>
+</element>
 <element name="U7" library="bbb-cc2520" package="CAT24C256WI-GT3" value="CAT24C256WI-GT3" x="10.16" y="63.5" smashed="yes" rot="R180">
 <attribute name="NAME" x="9.652" y="66.167" size="1.016" layer="25" font="vector" ratio="12"/>
 </element>
