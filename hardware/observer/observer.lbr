@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.05" unitdist="inch" unit="inch" style="lines" multiple="1" display="yes" altdistance="0.025" altunitdist="inch" altunit="inch"/>
+<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
@@ -461,7 +461,7 @@
 <smd name="BCK" x="2.52" y="-3" dx="1.55" dy="0.27" layer="1"/>
 <smd name="LRCK" x="2.52" y="-3.5" dx="1.55" dy="0.27" layer="1"/>
 </package>
-<package name="ADC121C027">
+<package name="ADC121C021">
 <wire x1="0" y1="0" x2="0" y2="3.05" width="0.127" layer="21"/>
 <wire x1="0" y1="3.05" x2="1.75" y2="3.05" width="0.127" layer="21"/>
 <wire x1="1.75" y1="3.05" x2="1.75" y2="0" width="0.127" layer="21"/>
@@ -471,9 +471,10 @@
 <smd name="VIN" x="-0.45" y="0.575" dx="1.2" dy="0.5" layer="1"/>
 <smd name="SDA" x="2.2" y="2.475" dx="1.2" dy="0.5" layer="1" rot="R180"/>
 <smd name="SCL" x="2.2" y="1.525" dx="1.2" dy="0.5" layer="1"/>
-<smd name="ADDR" x="2.2" y="0.575" dx="1.2" dy="0.5" layer="1"/>
-<text x="-0.1" y="3.15" size="0.6096" layer="1">&gt;Name</text>
-<text x="0.1" y="-0.7" size="0.6096" layer="1">value</text>
+<smd name="ALRT" x="2.2" y="0.575" dx="1.2" dy="0.5" layer="1"/>
+<text x="0" y="3.175" size="0.762" layer="21" font="vector">&gt;NAME</text>
+<text x="0" y="-1.27" size="0.762" layer="21" font="vector">&gt;VALUE</text>
+<circle x="-0.254" y="3.302" radius="0.127" width="0.127" layer="21"/>
 </package>
 </packages>
 <symbols>
@@ -607,7 +608,7 @@
 <pin name="MC/SCL" x="23.1" y="3" length="middle" rot="R180"/>
 <pin name="MS/AD" x="23.1" y="6" length="middle" rot="R180"/>
 </symbol>
-<symbol name="ADC121C027">
+<symbol name="ADC121C021">
 <wire x1="0" y1="0" x2="0" y2="20.32" width="0.254" layer="94"/>
 <wire x1="0" y1="20.32" x2="15.24" y2="20.32" width="0.254" layer="94"/>
 <wire x1="15.24" y1="20.32" x2="15.24" y2="0" width="0.254" layer="94"/>
@@ -617,7 +618,8 @@
 <pin name="VA" x="-5.08" y="15.24" length="middle"/>
 <pin name="SDA" x="20.32" y="15.24" length="middle" rot="R180"/>
 <pin name="SCL" x="20.32" y="10.16" length="middle" rot="R180"/>
-<pin name="ADDR" x="20.32" y="5.08" length="middle" rot="R180"/>
+<pin name="ALRT" x="20.32" y="5.08" length="middle" rot="R180"/>
+<text x="0" y="21.336" size="1.778" layer="95">&gt;NAME</text>
 </symbol>
 </symbols>
 <devicesets>
@@ -766,14 +768,14 @@ Thru hole 2.54mm spacing with 9.7mm diameter</description>
 </device>
 </devices>
 </deviceset>
-<deviceset name="ADC121C027">
+<deviceset name="ADC121C021">
 <gates>
-<gate name="G$1" symbol="ADC121C027" x="0" y="0"/>
+<gate name="G$1" symbol="ADC121C021" x="0" y="0"/>
 </gates>
 <devices>
-<device name="" package="ADC121C027">
+<device name="" package="ADC121C021">
 <connects>
-<connect gate="G$1" pin="ADDR" pad="ADDR"/>
+<connect gate="G$1" pin="ALRT" pad="ALRT"/>
 <connect gate="G$1" pin="GND" pad="GND"/>
 <connect gate="G$1" pin="SCL" pad="SCL"/>
 <connect gate="G$1" pin="SDA" pad="SDA"/>
