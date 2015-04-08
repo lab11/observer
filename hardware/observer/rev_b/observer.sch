@@ -10271,7 +10271,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <part name="SUPPLY5" library="SparkFun-Aesthetics" deviceset="VCC" device=""/>
 <part name="C15" library="passives" deviceset="CAPACITOR" device="" value="4.7uF"/>
 <part name="C11" library="passives" deviceset="CAPACITOR" device="" value="0.1uF"/>
-<part name="R4" library="passives" deviceset="RESISTOR" device="0402_RES" value="5k"/>
+<part name="R4" library="passives" deviceset="RESISTOR" device="0402_RES" value="4.99k"/>
 <part name="GND26" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="GND27" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="SUPPLY6" library="SparkFun-Aesthetics" deviceset="VCC" device=""/>
