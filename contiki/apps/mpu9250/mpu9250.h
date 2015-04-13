@@ -6,9 +6,11 @@
 #define MPU9250_I2C_ADDRESS  0x69;
 
 // SPI chipselect port and pin
-#define MPU9250_CS_PORT GPIO_C_NUM
-#define MPU9250_CS_PIN 3
+#define MPU9250_CS_PORT           GPIO_B_NUM
+#define MPU9250_CS_PIN			  3
 
+#define MPU9250_READ_MASK		   0x80
+#define MPU9250_WRITE_MASK		   0x7F
 
 // Register names according to the datasheet.
 // According to the InvenSense document
@@ -120,21 +122,129 @@
 #define MPU9250_CMPS_ZOUT_L        0x4E   // R
 #define MPU9250_CMPS_ZOUT_H        0x4F   // R
 
+/*void my_init() {
+	// Enable clock for SSI0 peripheral
+	// D0es same thing as SPI_ENABLE
+	REG(SYS_CTRL_RCGCSSI) |= 1;
+
+	// Disable SSI0 function before configuring module
+    REG(SSI1_BASE + SSI_CR1) = 0;
+
+    // Set IO clock as SSI clock source
+    REG(SSI1_BASE + SSI_CC) = 1;
 
 
+    // INPUT: Mux port CC2538_SPI_CLK_PORT_NUM / pin CC2538_SPI_CLK_PIN_NUM to SSI0 CLK
+    REG(IOC_CLK_SSIIN_SSI1) = (SPI1_CLK_PORT * 8) + SPI1_CLK_PIN;
+
+    // INPUT: Mux port CC2538_SPI_SEL_PORT_NUM / pin CC2538_SPI_SEL_PIN_NUM to SSI0 CS
+    REG(IOC_SSIFSSIN_SSI1) = (GPIO_A_NUM * 8) + 6;
+
+    // OUTPUT: Mux MISO output to the port CC2538_SPI_MISO_PORT_NUM / pin CC2538_SPI_MISO_PIN_NUM
+    ioc_set_sel(SPI1_RX_PORT, SPI1_RX_PIN, IOC_PXX_SEL_SSI1_TXD);
+
+    // INPUT: Mux port CC2538_SPI_MOSI_PORT_NUM / pin CC2538_SPI_MOSI_PIN_NUM to SSI0 MOSI
+    REG(IOC_SSIRXD_SSI0) = (SPI1_TX_PORT * 8) + SPI1_TX_PIN;
+
+
+    // Put all the SSI gpios into peripheral mode
+
+    GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(SPI1_CLK_PORT), GPIO_PIN_MASK(SPI1_CLK_PIN));
+
+    GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(SPI1_TX_PORT), GPIO_PIN_MASK(SPI1_TX_PIN));
+
+    GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(SPI1_RX_PORT), GPIO_PIN_MASK(SPI1_RX_PIN));
+
+    GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(6));
+
+
+	// Disable any control
+    ioc_set_over(SPI1_CLK_PORT, SPI1_CLK_PIN, IOC_OVERRIDE_DIS);
+
+    ioc_set_over(SPI1_TX_PORT, SPI1_TX_PIN, IOC_OVERRIDE_DIS);
+
+    ioc_set_over(SPI1_RX_PORT, SPI1_RX_PIN, IOC_OVERRIDE_DIS);
+
+    ioc_set_over(GPIO_A_NUM, 6, IOC_OVERRIDE_DIS);
+
+
+
+    // Specify division factor [CPSDVSR] which is used to derive the SSIClk from the system clock
+    // CPSDVSR: 8 bits, 0 ... 254 (even number)
+    // SSIClk = SysClk / (CPSDVSR x (1 + SCR))
+    // Where:
+    //          SysClk - system clock
+    //          SCR - value, programmed in SSICR0 register
+    REG(SSI1_BASE + SSI_CPSR) = 2;
+
+    // Put the SSI1 in Motorola_2 SPI mode (Polarity=1, Phase=0) with 8 bit data
+    // SCR = 0, so Transmit/Receive Baud rates = SysClk/(2*(1+0)) = 32MHz/2 = 16MHz
+    REG(SSI1_BASE + SSI_CR0) = SSI_CR0_SPO_M | 0x07;
+
+    // Device is "SLAVE"
+    REG(SSI1_BASE + SSI_CR1) |= SSI_CR1_MS;
+
+    // Enable Receive Time-Out interrupt
+    REG(SSI1_BASE + SSI_IM) = SSI_IM_RTIM;
+
+	// Clear SSI1 interrupt flags
+    REG(SSI1_BASE + SSI_ICR) = SSI_ICR_RORIC | SSI_ICR_RTIC;
+
+    // Enable SSI1 Interrupts
+    //nvic_interrupt_enable(NVIC_INT_SSI1);
+
+    // Enable the SSI1
+    REG(SSI1_BASE + SSI_CR1) |= SSI_CR1_SSE;
+    // SPI initialization finish
+
+}
+*/
+
+uint8_t MPU9250_readByte(uint8_t reg_addr) {
+	uint8_t data;
+
+	reg_addr |= MPU9250_READ_MASK;
+
+	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+	SPI_WRITE(reg_addr);
+	SPI_READ(data);
+	SPI_WAITFOREOTx();
+	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
+
+	return data;
+}
 
 // writes data to register reg_addr
 void MPU9250_writeSensor(uint8_t reg_addr, uint8_t data) {
 
-	//uint8_t transmit_buf[] = {reg_addr, data};
-	//i2c_burst_send(TARGET_ADDRESS, transmit_buf, sizeof(transmit_buf));
+	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+    SPI_WRITE(reg_addr & MPU9250_WRITE_MASK);
+    //SPI_WRITE(data);
+    //SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
-	for(int i = 0; i < sizeof(transmit_buf); ++i) {
-		SPI_CS_CLR(GPIO_B_NUM, );
-	    SPI_WRITE(transmit_buf[i]);
-	    SPI_CS_SET(GPIO_B_NUM, 4);
-	}
+    //SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+    SPI_WRITE(data);
 
+	SPI_WAITFOREOTx();
+    SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
+
+    //SPIX_FLUSH(0);
+    
+    /*SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+
+    SPIX_WAITFORTxREADY(0);
+    SPIX_BUF(0) = reg_addr;
+	SPIX_WAITFOREOTx(0);
+
+	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
+	*/
+
+}
+
+void read_slave(uint8_t *data) {
+	SPI_RXBUF = 0; \
+    SPI_WAITFOREORx(); \
+    *data = SPI_RXBUF; \
 }
 
 
@@ -146,37 +256,36 @@ void MPU9250_writeSensor(uint8_t reg_addr, uint8_t data) {
 */
 int16_t MPU9250_readSensor(uint8_t reg_addrL, uint8_t reg_addrH) {
 
-	/*uint8_t transmit_bufL[] = {reg_addrL};
-	uint8_t receive_bufL[1];
+	uint8_t readL;
+	uint8_t readH;
 
-	// tell the cc2538 which register you want to read from
-	i2c_single_send(TARGET_ADDRESS, *transmit_bufL);
-	// the following read will be the value from the register you wrote to the slave about
-	i2c_single_receive(TARGET_ADDRESS, receive_bufL);
+	readL = MPU9250_readByte(reg_addrL);
+	readH = MPU9250_readByte(reg_addrH);
 
-	uint8_t transmit_bufH[] = {reg_addrH};
-	uint8_t receive_bufH[1];
+	/*SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+	SPI_WRITE(reg_addrL | MPU9250_READ_MASK);
+	SPI_READ(readL);
+	SPI_WAITFOREOTx(); // Extra wait loop before asserting CS
+	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
-	// tell the cc2538 which register you want to read from
-	i2c_single_send(TARGET_ADDRESS, *transmit_bufH);
-	// the following read will be the value from the register you wrote to the slave about
-	i2c_single_receive(TARGET_ADDRESS, receive_bufH);
-
-	// concatenate the lower and upper 8bits to a signed 16 bit integer
-	uint16_t L = receive_bufL[0];
-	uint16_t H = receive_bufH[0];
+	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+	SPI_WRITE(reg_addrH | MPU9250_READ_MASK);
+	SPI_READ(readH);
+	SPI_WAITFOREOTx(); // Extra wait loop before asserting CS
+	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 	*/
+	
+	uint16_t L = readL;
+	uint16_t H = readH;
 
-	uint8_t transmit_bufBase[] = {reg_addrH}; // upper bits is at lower address
-	uint8_t receive_bufBase[2];
-	i2c_single_send(TARGET_ADDRESS, *transmit_bufBase);
-	i2c_burst_receive(TARGET_ADDRESS, receive_bufBase, 2);
+	//printf("lowerAddr: %02x\n", reg_addrL);
+	//printf("hihgerAddr: %02x\n", reg_addrH);
 
-	uint16_t L = receive_bufBase[1];
-	uint16_t H = receive_bufBase[0];
+	printf("lowerByte: %02x\n", readL);
+	printf("higherByte: %02x\n", readH);
+	printf("combinedByte: %04x\n", ((H<<8)+L) );
 
 	return (int16_t)((H<<8) + L);
-
 
 }
 
