@@ -9,9 +9,9 @@
 #include "usb-serial.h"
 #include "mpu9250.h"
 
-static struct etimer periodic_timer_red;
-static struct etimer periodic_timer_green;
-static struct etimer periodic_timer_blue;
+//static struct etimer periodic_timer_red;
+//static struct etimer periodic_timer_green;
+//static struct etimer periodic_timer_blue;
 
 
 /*---------------------------------------------------------------------------*/
@@ -29,9 +29,9 @@ PROCESS_THREAD(mpu9250_process, ev, data) {
 
 	//REG(SSI1_BASE + SSI_CR1) |= SSI_CR1_MS;
 
-	etimer_set(&periodic_timer_red, CLOCK_SECOND);
-	etimer_set(&periodic_timer_green, CLOCK_SECOND/2);
-	etimer_set(&periodic_timer_blue, CLOCK_SECOND/4);
+	//etimer_set(&periodic_timer_red, CLOCK_SECOND);
+	//etimer_set(&periodic_timer_green, CLOCK_SECOND/2);
+	//etimer_set(&periodic_timer_blue, CLOCK_SECOND/4);
 
 	// Initialize i2c
 	//i2c_init(GPIO_C_NUM, 5, GPIO_C_NUM, 4, I2C_SCL_NORMAL_BUS_SPEED);
@@ -57,7 +57,7 @@ PROCESS_THREAD(mpu9250_process, ev, data) {
 	
 
 	// ACCEL CONFIG
-	//MPU9250_writeSensor(MPU9250_ACCEL_CONFIG, 0x18);
+	MPU9250_writeSensor(MPU9250_ACCEL_CONFIG, 0x18);
 
 	int16_t currentX = 0;
 	int16_t currentY = 0;
@@ -67,7 +67,7 @@ PROCESS_THREAD(mpu9250_process, ev, data) {
  	//int16_t currentZ = 0;
 
 	while(1) {
-		PROCESS_YIELD();
+		//PROCESS_YIELD();
 
 			/*if(etimer_expired(&periodic_timer_blue)) {
 				// Disable I2C
@@ -111,49 +111,45 @@ PROCESS_THREAD(mpu9250_process, ev, data) {
 			MPU9250_writeSensor(MPU9250_PWR_MGMT_1, 0x00);
 			leds_toggle(LEDS_RED);
 		}*/
-		if (etimer_expired(&periodic_timer_green)) {
-			//currentX = MPU9250_readSensor(MPU9250_ACCEL_XOUT_L, MPU9250_ACCEL_XOUT_H);
-			// currentY = MPU9250_readSensor(MPU9250_ACCEL_YOUT_L, MPU9250_ACCEL_YOUT_H);
-			// printf("ACCEL_Y: %x\n", currentY);
-			// accel_config_reg = MPU9250_readByte(MPU9250_ACCEL_CONFIG);
-			// printf("accel_config_reg value: %x\n", accel_config_reg);
-			//MPU9250_writeSensor(MPU9250_USER_CTRL, 0x10);
-			whoami = MPU9250_readByte(MPU9250_WHO_AM_I);
-			printf("whoami: %08x\n", whoami);
-			whoami2 = MPU9250_readSensor(MPU9250_WHO_AM_I, MPU9250_WHO_AM_I);
-			printf("whoami2: %08x\n", whoami2 );
-		
-			leds_off(LEDS_ALL);
+		//currentX = MPU9250_readSensor(MPU9250_ACCEL_XOUT_L, MPU9250_ACCEL_XOUT_H);
+		currentY = MPU9250_readSensor(MPU9250_ACCEL_YOUT_L, MPU9250_ACCEL_YOUT_H);
+		printf("ACCEL_Y: %x\n", currentY);
+		accel_config_reg = MPU9250_readByte(MPU9250_ACCEL_CONFIG);
+		printf("accel_config_reg value: %x\n", accel_config_reg);
+		//MPU9250_writeSensor(MPU9250_USER_CTRL, 0x10);
+		whoami = MPU9250_readByte(MPU9250_WHO_AM_I);
+		printf("whoami: %08x\n", whoami);
+		// whoami2 = MPU9250_readSensor(MPU9250_WHO_AM_I, MPU9250_WHO_AM_I);
+		// printf("whoami2: %08x\n", whoami2 );
+	
+		leds_off(LEDS_ALL);
 
-			if (currentY <= 750 && currentY >= -750) {
-				leds_off(LEDS_RED);
-				leds_on(LEDS_GREEN);
-				leds_off(LEDS_BLUE);
-			}
-			else if (currentY > 750) {
-				leds_on(LEDS_RED);
-				leds_off(LEDS_GREEN);
-				leds_off(LEDS_BLUE);
-			} 
-			else {
-				leds_off(LEDS_RED);
-				leds_off(LEDS_GREEN);
-				leds_on(LEDS_BLUE);
-			}
-			/*
-			if (currentX <= 750 && currentX >= -750) {
-			}
-			else if (currentX > 750) {
-				leds_on(LEDS_RED);
-			}
-			else {
-				//leds_on()
-			}
-			*/
-
-			etimer_restart(&periodic_timer_green);
+		if (currentY <= 750 && currentY >= -750) {
+			leds_off(LEDS_RED);
+			leds_on(LEDS_GREEN);
+			leds_off(LEDS_BLUE);
 		}
-				
+		else if (currentY > 750) {
+			leds_on(LEDS_RED);
+			leds_off(LEDS_GREEN);
+			leds_off(LEDS_BLUE);
+		} 
+		else {
+			leds_off(LEDS_RED);
+			leds_off(LEDS_GREEN);
+			leds_on(LEDS_BLUE);
+		}
+		/*
+		if (currentX <= 750 && currentX >= -750) {
+		}
+		else if (currentX > 750) {
+			leds_on(LEDS_RED);
+		}
+		else {
+			//leds_on()
+		}
+		*/
+			
 
 
 	}

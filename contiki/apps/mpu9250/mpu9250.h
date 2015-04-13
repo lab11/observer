@@ -225,7 +225,7 @@ void MPU9250_writeSensor(uint8_t reg_addr, uint8_t data) {
     //SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
     SPI_WRITE(data);
 
-	SPI_WAITFOREOTx();
+	//SPI_WAITFOREOTx();
     SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
     //SPIX_FLUSH(0);
