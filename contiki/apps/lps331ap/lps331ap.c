@@ -19,7 +19,6 @@ AUTOSTART_PROCESSES(&lps331ap_process);
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(lps331ap_process, ev, data) {
   PROCESS_BEGIN();
-  etimer_set(&periodic_timer, CLOCK_SECOND);
 
   // Setup SPI clock high while idle, data valid on clock trailing edge
   spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
@@ -36,21 +35,31 @@ PROCESS_THREAD(lps331ap_process, ev, data) {
   nvic_interrupt_enable(NVIC_INT_GPIO_PORT_C);
   gpio_register_callback((gpio_callback_t)pressure_irq_handler, LPS331AP_IRQ_PORT, LPS331AP_IRQ_PIN);
 
+  lps331ap_write_byte(LPS331AP_CTRL_REG2, lps331ap_ctrl_reg2_reset.value);
+
+  etimer_set(&periodic_timer, CLOCK_SECOND/1000);
+  PROCESS_YIELD();
+
+  lps331ap_write_byte(LPS331AP_CTRL_REG2, lps331ap_ctrl_reg2_default.value);
+
   lps331ap_write_byte(LPS331AP_CTRL_REG1, lps331ap_ctrl_reg1_default.value);
   lps331ap_write_byte(LPS331AP_CTRL_REG3, lps331ap_ctrl_reg3_default.value);
   lps331ap_write_byte(LPS331AP_RES_CONF, LPS331AP_025_NOISE);
   
   while(1) {
-    PROCESS_YIELD();
+    //PROCESS_YIELD();
 
     uint8_t who_am_i = lps331ap_read_byte(LPS331AP_WHO_AM_I);
-    printf("%x\n", who_am_i);
+    //printf("%x\n", who_am_i);
 
-    if (etimer_expired(&periodic_timer))
-    {
-        leds_toggle(LEDS_RED);
-        etimer_restart(&periodic_timer);
-    }
+    uint8_t ctrl1 = lps331ap_read_byte(LPS331AP_CTRL_REG1);
+    //printf("%x\n", ctrl);
+
+    uint8_t ctrl2 = lps331ap_read_byte(LPS331AP_CTRL_REG2);
+
+    uint8_t ctrl3 = lps331ap_read_byte(LPS331AP_CTRL_REG3);
+    
+    pressure_irq_handler(0,0);
     
   }
   PROCESS_END();
@@ -76,7 +85,7 @@ void lps331ap_write_byte(uint8_t addr, uint8_t write){
   SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
 }
 
-void pressure_irq_handler(){
+void pressure_irq_handler(uint8_t port, uint8_t pin){
   int pout = 0;
   int8_t read = 0;
   read = lps331ap_read_byte(LPS331AP_PRESS_POUT_XL_REH);

@@ -53,13 +53,13 @@ typedef union lps331ap_ctrl_reg1
     unsigned spi_interface: 1;
     unsigned bdu:           1;
     unsigned delta_en:      1;
-    unsigned irq_en:        1;
+    unsigned int_en:        1;
     unsigned odr:           3;
     unsigned active:        1;
   } f;
 } lps331ap_ctrl_reg1_t;
 
-static lps331ap_ctrl_reg1_t lps331ap_ctrl_reg1_default = {.value = 0xF8};
+static lps331ap_ctrl_reg1_t lps331ap_ctrl_reg1_default = {.value = 0xE8};
 
 typedef union lps331ap_ctrl_reg2
 {
@@ -74,6 +74,7 @@ typedef union lps331ap_ctrl_reg2
 } lps331ap_ctrl_reg2_t;
 
 static lps331ap_ctrl_reg2_t lps331ap_ctrl_reg2_default = {.value = 0x00};
+static lps331ap_ctrl_reg2_t lps331ap_ctrl_reg2_reset = {.value = 0x82};
 
 
 typedef union lps331ap_ctrl_reg3
@@ -87,11 +88,11 @@ typedef union lps331ap_ctrl_reg3
   } f;
 } lps331ap_ctrl_reg3_t;
 
-static lps331ap_ctrl_reg3_t lps331ap_ctrl_reg3_default = {.value = 0x04};
+static lps331ap_ctrl_reg3_t lps331ap_ctrl_reg3_default = {.value = 0x24};
 
 int8_t lps331ap_read_byte(uint8_t addr);
-void lps331ap_write_byte(uint8_t addr, uint8_t write);
-void pressure_irq_handler();
+void lps331ap_write_byte(uint8_t addr, uint8_t data);
+void pressure_irq_handler(uint8_t port, uint8_t pin);
 
 
 #endif /*LPS331AP_H*/

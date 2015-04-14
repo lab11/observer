@@ -6,6 +6,7 @@
  */
 
 // No need for UART
+#define WATCHDOG_CONF_ENABLE 0
 #define STARTUP_CONF_VERBOSE 0
 #define UART_CONF_ENABLE 1
 
