@@ -7,10 +7,11 @@
 #define LPS331AP_READ_MASK          0x80
 #define LPS331AP_INC_MASK           0x40
 
-#define LPS331AP_IRQ_BASE           GPIO_C_BASE
-#define LPS331AP_IRQ_PORT           GPIO_C_NUM
-#define LPS331AP_IRQ_PIN            0
-#define LPS331AP_IRQ_PIN_MASK       GPIO_PIN_MASK(LPS331AP_IRQ_PIN)
+#define LPS331AP_INT_PORT           GPIO_C_NUM
+#define LPS331AP_INT_PIN            0
+#define LPS331AP_INT_VECTOR         NVIC_INT_GPIO_PORT_C
+#define LPS331AP_INT_BASE           GPIO_PORT_TO_BASE(LPS331AP_INT_PORT)
+#define LPS331AP_INT_PIN_MASK       GPIO_PIN_MASK(LPS331AP_INT_PIN)
 
 // Register Mapping
 #define LPS331AP_REF_P_XL           0x08
