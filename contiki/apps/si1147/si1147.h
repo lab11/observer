@@ -5,14 +5,21 @@
 
 // when set, enables print statements
 #define SI1147_DBG 0
+#define SI1147_DBG_ALS 1
 
 #define SI1147_STARTUP_TIME 0.025*CLOCK_SECOND
 #define SI1147_DEFAULT_SLAVE_ADDR 0x60
+
+#define SI1147_IRQ_BASE           GPIO_C_BASE
+#define SI1147_IRQ_PORT           GPIO_C_NUM
+#define SI1147_IRQ_PIN            2
+#define SI1147_IRQ_PIN_MASK       GPIO_PIN_MASK(SI1147_IRQ_PIN)
 
 // bit 6 disables auto incr when set
 #define SI1147_AUTO_INCR_DISABLE 0x40
 #define SI1147_PS_ENABLE 0x07
 #define SI1147_ALS_ENABLE 0xF0
+#define SI1147_PSALS_ENABLE 0xF7
 
 // measurement rates
 #define SI1147_FORCED_CONVERSION 0
@@ -124,7 +131,10 @@ typedef struct si1147_als_data
   si1147_uint16_t aux;
 } si1147_als_data;
 
-void si1147_init(uint16_t meas_rate);
+static struct timer si1147_command_timer;
+static struct timer si1147_startup_timer;
+
+void si1147_init(uint16_t meas_rate, uint8_t meas_enable);
 void si1147_write_reg(uint8_t reg_addr, uint8_t data);
 uint8_t si1147_read_reg(uint8_t reg_addr);
 
@@ -132,7 +142,11 @@ uint8_t si1147_write_command(uint8_t data);
 void si1147_write_param(uint8_t param, uint8_t data);
 uint8_t si1147_read_param(uint8_t param);
 
-void si1147_ALS_enable();
-void si1147_ALS_force(si1147_als_data *data);
+void si1147_als_read(si1147_als_data *data);
+void si1147_als_force_read(si1147_als_data *data);
+
+void si1147_irq_enable();
+void si1147_als_irq_enable();
+void si1147_irq_handler();
 
 #endif /*SI1147_H*/
