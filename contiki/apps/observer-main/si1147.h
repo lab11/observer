@@ -131,8 +131,7 @@ typedef struct si1147_als_data
   si1147_uint16_t aux;
 } si1147_als_data;
 
-static struct timer si1147_command_timer;
-static struct timer si1147_startup_timer;
+void i2c_buffer_flush();
 
 void si1147_init(uint16_t meas_rate, uint8_t meas_enable);
 void si1147_write_reg(uint8_t reg_addr, uint8_t data);

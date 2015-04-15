@@ -5,39 +5,9 @@
 #include "cpu/cc2538/dev/gpio.h"
 #include "cpu/cc2538/dev/i2c.h"
 #include "si1147.h"
-static struct timer wait_timer;
 
-//TODO: error handling
-
-/*---------------------------------------------------------------------------*/
-PROCESS(si1147_process, "si1147");
-AUTOSTART_PROCESSES(&si1147_process);
-/*---------------------------------------------------------------------------*/
-void i2c_buffer_flush();
-
-PROCESS_THREAD(si1147_process, ev, data) {
-  uint8_t rx;
-  PROCESS_BEGIN();
-
-  timer_set(&wait_timer, CLOCK_SECOND);
-
-
-  i2c_init(GPIO_C_NUM, 5, // SDA
-           GPIO_C_NUM, 4, // SCL
-           I2C_SCL_FAST_BUS_SPEED);   
-  
-  si1147_init(0, SI1147_ALS_ENABLE); 
-
-  while(1) {
-    i2c_buffer_flush(); 
-    si1147_write_command(SI1147_COMMAND_ALS_FORCE);
-
-    timer_restart(&si1147_startup_timer, SI1147_STARTUP_TIME);
-    while (!timer_expired(&si1147_startup_timer));
-    si1147_irq_handler();
-  }
-  PROCESS_END();
-}
+static struct timer si1147_command_timer;
+static struct timer si1147_startup_timer;
 
 // autoincrement disable if reg_addr is anded with SI1147_AUTO_INCR_DISABLE 
 void si1147_write_reg(uint8_t reg_addr, uint8_t data) {
@@ -158,7 +128,7 @@ void si1147_als_read(si1147_als_data *data) {
   data->aux.b.hi = si1147_read_reg(SI1147_AUX_DATA1);
   
   if (SI1147_DBG_ALS) {
-    printf("ALS vis: %hd\n ALS ir: %hd\n ALS aux: %hd\n",
+    printf("ALS vis: %hd\nALS  ir: %hd\nALS aux: %hd\n",
       data->vis.val,
       data->ir.val,
       data->aux.val);
