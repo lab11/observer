@@ -106,6 +106,12 @@ void si1147_init(uint16_t meas_rate, uint8_t meas_enable) {
   // must be written before any measurement is forced or auto
   si1147_write_param(SI1147_PARAM_CHLIST, meas_enable);
 
+	// set up ALS vs PS settings
+	if ((meas_enable | SI1147_ALS_ENABLE) == meas_enable) {
+		// this seems to help differentiate between normal and zero light
+		si1147_write_param(SI1147_PARAM_ALS_VIS_ADC_GAIN, 0x3);
+	}
+
   // set auto mode
   if (meas_rate > 0) {
     if (meas_enable == SI1147_ALS_ENABLE)
