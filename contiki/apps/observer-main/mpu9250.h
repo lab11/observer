@@ -3,6 +3,8 @@
 
 #define MPU9250_DBG 0
 
+#define MPU9250_STARTUP_TIME 0.035*CLOCK_SECOND
+
 // I2C address 0x69 could be 0x68 depends on your wiring.
 #define MPU9250_I2C_ADDRESS  0x69;
 

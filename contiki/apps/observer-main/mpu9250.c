@@ -17,7 +17,7 @@ void mpu9250_init() {
   // Clear sleep bit to start sensor
   mpu9250_writeSensor(MPU9250_PWR_MGMT_1, 0x80);
 
-  timer_set(&mpu9250_startup_timer, SI1147_STARTUP_TIME);
+  timer_set(&mpu9250_startup_timer, MPU9250_STARTUP_TIME);
   while (!timer_expired(&mpu9250_startup_timer));
 	
   // ACCEL CONFIG
