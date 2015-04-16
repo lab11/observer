@@ -1,14 +1,14 @@
 #include "contiki.h"
 #include <stdio.h>
-#include "sys/timer.h"
+#include "sys/etimer.h"
 #include "dev/leds.h"
 #include "cpu/cc2538/dev/gpio.h"
 #include "cpu/cc2538/dev/i2c.h"
 #include "si1147.h"
 
-static struct timer wait_timer;
+static struct etimer wait_timer;
 
-//TODO: error handling
+#define POLL_PERIOD CLOCK_SECOND
 
 /*---------------------------------------------------------------------------*/
 PROCESS(observer_main_process, "observer-main");
@@ -19,7 +19,7 @@ PROCESS_THREAD(observer_main_process, ev, data) {
   
   si1147_als_data als_data;
 
-  timer_set(&wait_timer, CLOCK_SECOND);
+  etimer_set(&wait_timer, POLL_PERIOD);
 
   i2c_init(GPIO_C_NUM, 5, // SDA
            GPIO_C_NUM, 4, // SCL
@@ -28,12 +28,14 @@ PROCESS_THREAD(observer_main_process, ev, data) {
   si1147_init(0, SI1147_ALS_ENABLE); 
 
   while(1) {
+    PROCESS_YIELD();
+    etimer_stop(&wait_timer);
+
     printf("---------------\n");
     i2c_buffer_flush();
     si1147_als_force_read(&als_data);
-
-    timer_restart(&wait_timer);
-    while (!timer_expired(&wait_timer));
+ 
+    etimer_reset(&wait_timer);
   }
   PROCESS_END();
 }
