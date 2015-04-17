@@ -14,8 +14,11 @@ static struct timer mpu9250_startup_timer;
 void mpu9250_init() {
 	spi_cs_init(MPU9250_CS_PORT, MPU9250_CS_PIN);
   
+  // disable mpu9250 i2c
+  mpu9250_writeSensor(MPU9250_USER_CTRL, 0x10);
+
   // Clear sleep bit to start sensor
-  mpu9250_writeSensor(MPU9250_PWR_MGMT_1, 0x80);
+  mpu9250_writeSensor(MPU9250_PWR_MGMT_1, 0x80); //80
 
   timer_set(&mpu9250_startup_timer, MPU9250_STARTUP_TIME);
   while (!timer_expired(&mpu9250_startup_timer));
@@ -59,7 +62,7 @@ int16_t mpu9250_readSensor(uint8_t reg_addrL, uint8_t reg_addrH) {
   uint16_t val = ((H<<8)+L);
 
   if (MPU9250_DBG)
-    printf("mpu9250: read [L-0x%x H-0x%x] <- %d", reg_addrL, reg_addrH, val);
+    printf("mpu9250: read [L-0x%x H-0x%x] <- %d\n", reg_addrL, reg_addrH, val);
 	
   return val;
 }

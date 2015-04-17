@@ -28,7 +28,7 @@ PROCESS_THREAD(observer_main_process, ev, data) {
 	spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
   i2c_init(GPIO_C_NUM, 5, // SDA
            GPIO_C_NUM, 4, // SCL
-           I2C_SCL_FAST_BUS_SPEED);   
+           I2C_SCL_FAST_BUS_SPEED);
   
   si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
   mpu9250_init(); 
