@@ -8,13 +8,13 @@
 #include "cpu/cc2538/dev/gpio.h"
 #include "cpu/cc2538/dev/i2c.h"
 
-static struct etimer periodic_timer_red;
-static struct etimer periodic_timer_green;
-static struct etimer periodic_timer_blue;
+//static struct etimer periodic_timer;
 
-
+#define Si7021_debug						1
 
 #define Si7021_SLAVE_ADDRESS 				0x40
+
+#define Si7021_STARTUP_TIME					0.08*CLOCK_SECOND
 
 // These are the measurement commands
 #define Si7021_TEMP_MEASURE_HOLD 			0xE3
@@ -46,5 +46,10 @@ typedef enum {RH_HOLD, RH_NOHOLD} HUMD_READ_t;
 #define Si7021_HEATER_ENABLE				0x04 	// R/W
 #define Si7021_HEATER_DISABLE 				0x00 	// R/W
 
+uint16_t Si7021_readTemp(TEMP_READ_t read_type);
+uint16_t Si7021_readHumd(HUMD_READ_t read_type);
+void Si7021_write_userreg(uint8_t data);
+int Si7021_read_userreg();
+double Si7021_read_electronicID() ;
 
 #endif /*SI7021_H*/
