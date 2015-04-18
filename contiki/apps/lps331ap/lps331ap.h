@@ -27,7 +27,7 @@
 #define LPS331AP_THS_P_LOW_REG      0x25
 #define LPS331AP_THS_P_HIGH_REG     0x26
 #define LPS331AP_STATUS_REG         0x27
-#define LPS331AP_PRESS_POUT_XL_REH  0x28
+#define LPS331AP_PRESS_OUT_XL       0x28
 #define LPS331AP_PRESS_OUT_L        0x29
 #define LPS331AP_PRESS_OUT_H        0x2A
 #define LPS331AP_TEMP_OUT_L         0x2B
@@ -60,7 +60,7 @@ typedef union lps331ap_ctrl_reg1
   } f;
 } lps331ap_ctrl_reg1_t;
 
-static lps331ap_ctrl_reg1_t lps331ap_ctrl_reg1_default = {.value = 0xE8};
+static lps331ap_ctrl_reg1_t lps331ap_ctrl_reg1_default = {.value = 0xE2};
 
 typedef union lps331ap_ctrl_reg2
 {
@@ -89,11 +89,14 @@ typedef union lps331ap_ctrl_reg3
   } f;
 } lps331ap_ctrl_reg3_t;
 
-static lps331ap_ctrl_reg3_t lps331ap_ctrl_reg3_default = {.value = 0x24};
+static lps331ap_ctrl_reg3_t lps331ap_ctrl_reg3_default = {.value = 0x04};
 
 int8_t lps331ap_read_byte(uint8_t addr);
+void lps331ap_read_bytes(uint8_t addr, uint8_t * bytes, unsigned size);
 void lps331ap_write_byte(uint8_t addr, uint8_t data);
-void pressure_irq_handler(uint8_t port, uint8_t pin);
+void pressure_int_handler(uint8_t port, uint8_t pin);
+unsigned get_pressure();
+void interrupt_en();
 
 
 #endif /*LPS331AP_H*/
