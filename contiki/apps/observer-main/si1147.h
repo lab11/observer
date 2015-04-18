@@ -129,7 +129,7 @@ typedef struct si1147_als_data
   si1147_uint16_t vis;
   si1147_uint16_t ir;
   si1147_uint16_t aux;
-} si1147_als_data;
+} si1147_als_data_t;
 
 void i2c_buffer_flush();
 
@@ -141,8 +141,8 @@ uint8_t si1147_write_command(uint8_t data);
 void si1147_write_param(uint8_t param, uint8_t data);
 uint8_t si1147_read_param(uint8_t param);
 
-void si1147_als_read(si1147_als_data *data);
-void si1147_als_force_read(si1147_als_data *data);
+void si1147_als_read(si1147_als_data_t *data);
+void si1147_als_force_read(si1147_als_data_t *data);
 
 void si1147_irq_enable();
 void si1147_als_irq_enable();

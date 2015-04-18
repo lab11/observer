@@ -5,6 +5,7 @@
 #include "cpu/cc2538/dev/gpio.h"
 #include "cpu/cc2538/dev/i2c.h"
 #include "si1147.h"
+#include "misc.h"
 
 static struct timer si1147_command_timer;
 static struct timer si1147_startup_timer;
@@ -94,7 +95,7 @@ void si1147_init(uint16_t meas_rate, uint8_t meas_enable) {
   
   // startup time for SI1147 is 25 ms
   timer_set(&si1147_startup_timer, SI1147_STARTUP_TIME);
-  while (!timer_expired(&si1147_startup_timer));
+  WAIT_WHILE(!timer_expired(&si1147_startup_timer));
  
   // after initialization, moves to standby mode
   // host must write 0x17 to HW_KEY for proper operation
@@ -126,7 +127,7 @@ void si1147_init(uint16_t meas_rate, uint8_t meas_enable) {
 }
 
 // caller must allocate data as 6 bytes
-void si1147_als_read(si1147_als_data *data) { 
+void si1147_als_read(si1147_als_data_t *data) { 
   data->vis.b.lo = si1147_read_reg(SI1147_ALS_VIS_DATA0);
   data->vis.b.hi = si1147_read_reg(SI1147_ALS_VIS_DATA1);
   data->ir.b.lo = si1147_read_reg(SI1147_ALS_IR_DATA0);
@@ -143,7 +144,7 @@ void si1147_als_read(si1147_als_data *data) {
   return;
 }
 
-void si1147_als_force_read(si1147_als_data *data) {
+void si1147_als_force_read(si1147_als_data_t *data) {
   si1147_write_command(SI1147_COMMAND_ALS_FORCE);
   si1147_als_read(data);
 
@@ -174,19 +175,11 @@ void si1147_als_irq_enable() {
 void si1147_irq_handler() {
   uint8_t rx;
 
-  si1147_als_data als_data;
+  si1147_als_data_t als_data;
 
   si1147_als_read(&als_data);
 
   rx = si1147_read_reg(SI1147_IRQ_STATUS);
   si1147_write_reg(SI1147_IRQ_STATUS, rx);
   return;
-}
-
-void i2c_buffer_flush() {
-  int i;
-  for (i=0; i < 9; i++) {
-    i2c_master_command(I2C_MASTER_CMD_BURST_SEND_FINISH);
-    while(i2c_master_busy());
-  }
 }
