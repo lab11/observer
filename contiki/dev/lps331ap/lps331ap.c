@@ -1,34 +1,13 @@
-#include "contiki.h"
-#include "dev/serial-line.h"
 #include <stdio.h>
-#include "sys/etimer.h"
-#include "dev/leds.h"
-#include "dev/gpio.h"
+
+#include "contiki.h"
+#include "serial-line.h"
+#include "gpio.h"
 #include "spi-arch.h"
-#include "dev/spi.h"
-#include "dev/nvic.h"
-#include "dev/ioc.h"
+#include "spi.h"
+#include "nvic.h"
+#include "ioc.h"
 #include "lps331ap.h"
-
-/*---------------------------------------------------------------------------*/
-PROCESS(lps331ap_process, "lps331ap");
-AUTOSTART_PROCESSES(&lps331ap_process);
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(lps331ap_process, ev, data) {
-  PROCESS_BEGIN();
-
-  lps331ap_init();
-  
-  while(1) {
-    //PROCESS_YIELD();
-    unsigned pressure = get_pressure();
-    printf("%x\n", pressure);
-    //if(etimer_expired(&periodic_timer))
-    //  etimer_reset(&periodic_timer);
-    
-  }
-  PROCESS_END();
-}
 
 void
 lps331ap_init()

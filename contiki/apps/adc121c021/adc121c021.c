@@ -28,6 +28,9 @@ PROCESS_THREAD(adc121c021_process, ev, data) {
            GPIO_C_NUM, 4, // SCL
            I2C_SCL_NORMAL_BUS_SPEED);
 
+  adc121c021_write_reg8(ADC121C021_CONFIG, 0x20);
+
+
 	while(1) {
     printf("Hello world!\n"); 
 
@@ -50,7 +53,6 @@ uint16_t adc121c021_read_amplitude() {
   high = adc121c021_read_reg16(ADC121C021_HIGH_CONV);*/
 
   // start automatic conversion
-  adc121c021_write_reg8(ADC121C021_CONFIG, 0x20);
   adc121c021_read_reg8(ADC121C021_CONFIG);
   
 /*	
