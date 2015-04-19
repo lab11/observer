@@ -1,15 +1,15 @@
 #include "contiki.h"
-#include <stdio.h>
-#include "sys/etimer.h"
-#include "dev/leds.h"
-#include "cpu/cc2538/spi-arch.h"
-#include "core/dev/spi.h"
-#include "cpu/cc2538/dev/gpio.h"
-#include "cpu/cc2538/dev/i2c.h"
+#include "lps331ap.h"
 #include "si1147.h"
 #include "mpu9250.h"
-#include "lps331ap.h"
-#include "misc.h"
+#include "sys/etimer.h"
+#include "dev/leds.h"
+#include "spi-arch.h"
+#include "spi.h"
+#include "gpio.h"
+#include "i2c.h"
+
+#include <stdio.h>
 
 static struct etimer wait_timer;
 static struct timer test_timer;
@@ -50,3 +50,11 @@ PROCESS_THREAD(observer_main_process, ev, data) {
   }
   PROCESS_END();
 }
+
+// void i2c_buffer_flush() {
+//   int i;
+//   for (i=0; i < 9; i++) {
+//     i2c_master_command(I2C_MASTER_CMD_BURST_SEND_FINISH);
+//     WAIT_WHILE(i2c_master_busy());
+//   }
+// }

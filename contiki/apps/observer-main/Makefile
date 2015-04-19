@@ -1,10 +1,7 @@
 DEFINES+=PROJECT_CONF_H=\"project-conf.h\"
-
 CONTIKI_PROJECT = observer-main
 
 TARGETDIRS += ../../platform 
-
-PROJECT_SOURCEFILES += si1147.c mpu9250.c lps331ap.c misc.c
 
 all: $(CONTIKI_PROJECT)
 

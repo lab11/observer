@@ -79,7 +79,7 @@ lps331ap_write(uint8_t address, uint16_t len, uint8_t * buf)
   return 0;
 }
 
-uint32_t get_pressure()
+uint32_t lps331ap_get_pressure()
 {
   uint8_t buf[3];
   lps331ap_read(LPS331AP_PRESS_OUT_XL, 3, buf);

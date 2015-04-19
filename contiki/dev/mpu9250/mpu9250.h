@@ -125,6 +125,12 @@
 #define MPU9250_CMPS_ZOUT_L        0x4E   // R
 #define MPU9250_CMPS_ZOUT_H        0x4F   // R
 
+#define WAIT_WHILE(cond) \
+  do { \
+    volatile int8_t i=0; \
+    while(cond) i++; \
+  } while(0)
+
 void mpu9250_init();
 
 uint8_t mpu9250_readByte(uint8_t reg_addr);

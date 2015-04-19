@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include "usb-serial.h"
 #include "mpu9250.h"
-#include "misc.h"
 
 static struct timer mpu9250_startup_timer;
 

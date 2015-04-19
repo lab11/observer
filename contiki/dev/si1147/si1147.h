@@ -115,6 +115,14 @@
 #define SI1147_PARAM_ALS_IR_ADC_GAIN      0x1E
 #define SI1147_PARAM_ALS_IR_ADC_MISC      0x1F
 
+#define WAIT_WHILE(cond) \
+  do { \
+    volatile int8_t i=0; \
+    while(cond) i++; \
+  } while(0)
+
+void i2c_buffer_flush();
+
 typedef union si1147_uint16
 {
   uint16_t val;
