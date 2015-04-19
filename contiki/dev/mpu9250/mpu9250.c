@@ -34,9 +34,8 @@ uint8_t mpu9250_readByte(uint8_t reg_addr) {
 
 	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
 	SPI_WRITE(reg_addr);
+  SPI_FLUSH();
 	SPI_READ(data);
-  SPI_WAITFOREORx();
-	SPI_WAITFORTxREADY();
 	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
 	return data;
@@ -47,7 +46,6 @@ void mpu9250_writeSensor(uint8_t reg_addr, uint8_t data) {
 	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
   SPI_WRITE(reg_addr & MPU9250_WRITE_MASK);
   SPI_WRITE(data);
-
   SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 }
 
