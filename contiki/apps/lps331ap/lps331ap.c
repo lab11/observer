@@ -10,10 +10,6 @@
 #include "dev/ioc.h"
 #include "lps331ap.h"
 
-
-static struct etimer periodic_timer;
-
-
 /*---------------------------------------------------------------------------*/
 PROCESS(lps331ap_process, "lps331ap");
 AUTOSTART_PROCESSES(&lps331ap_process);
@@ -21,36 +17,12 @@ AUTOSTART_PROCESSES(&lps331ap_process);
 PROCESS_THREAD(lps331ap_process, ev, data) {
   PROCESS_BEGIN();
 
-  // Setup SPI clock high while idle, data valid on clock trailing edge
-  spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
-  spi_cs_init(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
-
-  // Setup pressure interrupt
-  //interrupt_en();
-
-  lps331ap_write_byte(LPS331AP_CTRL_REG2, lps331ap_ctrl_reg2_reset.value);
-
-  while(1)
-  {
-    uint8_t reg2 = lps331ap_read_byte(LPS331AP_CTRL_REG2);
-    if(!(reg2 & 0x80))
-      break;
-  }
-  leds_toggle(LEDS_RED);
-  etimer_set(&periodic_timer, CLOCK_SECOND/100);
-  PROCESS_YIELD();
-
-
-  lps331ap_write_byte(LPS331AP_CTRL_REG2, lps331ap_ctrl_reg2_default.value);
-  lps331ap_write_byte(LPS331AP_CTRL_REG1, lps331ap_ctrl_reg1_default.value);
-  lps331ap_write_byte(LPS331AP_CTRL_REG3, lps331ap_ctrl_reg3_default.value);
-  lps331ap_write_byte(LPS331AP_RES_CONF, LPS331AP_020_NOISE);
-
-  etimer_reset(&periodic_timer);
+  lps331ap_init();
   
   while(1) {
     //PROCESS_YIELD();
     unsigned pressure = get_pressure();
+    printf("%x\n", pressure);
     //if(etimer_expired(&periodic_timer))
     //  etimer_reset(&periodic_timer);
     
@@ -58,70 +30,93 @@ PROCESS_THREAD(lps331ap_process, ev, data) {
   PROCESS_END();
 }
 
-int8_t lps331ap_read_byte(uint8_t addr){
-  addr |= LPS331AP_READ_MASK;
-  uint8_t read;
-  SPI_CS_CLR(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
-  SPI_WRITE(addr);
-  SPI_READ(read);
-  SPI_WAITFOREORx();
-  SPI_WAITFORTxREADY(); // Extra wait loop before asserting CS
-  SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
-  return read;
-}
-
-void lps331ap_read_bytes(uint8_t addr, uint8_t * bytes, unsigned size)
+void
+lps331ap_init()
 {
-  addr |= LPS331AP_READ_MASK;
-  addr |= LPS331AP_INC_MASK;
-  unsigned i;
-  SPI_CS_CLR(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
-  SPI_WRITE(addr);
-  SPI_WAITFORTxREADY();
-  SPI_WAITFOREORx();
-  for(i = 0; i < size; ++i)
+  spi_cs_init(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
+  SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
+
+  lps331ap_write(LPS331AP_CTRL_REG2, 1, &lps331ap_ctrl_reg2_reset.value);
+
+  while(1)
   {
-    SPI_READ(bytes[i]);
-    SPI_WAITFOREORx();
+    uint8_t reg2;
+    lps331ap_read(LPS331AP_CTRL_REG2, 1, &reg2);
+    if(!(reg2 & 0x80))
+      break;
   }
-  SPI_WAITFORTxREADY(); // Extra wait loop before asserting CS
-  SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
+
+  lps331ap_write(LPS331AP_CTRL_REG2, 1, &lps331ap_ctrl_reg2_default.value);
+  lps331ap_write(LPS331AP_CTRL_REG1, 1, &lps331ap_ctrl_reg1_default.value);
+  lps331ap_write(LPS331AP_CTRL_REG3, 1, &lps331ap_ctrl_reg3_default.value);
+  lps331ap_write(LPS331AP_RES_CONF, 1, &lps332ap_res_cfg_default.value);
 }
 
+int
+lps331ap_read(uint8_t address, uint16_t len, uint8_t * buf)
+{
+  uint16_t i;
+  uint8_t read_address = address | LPS331AP_READ_MASK | LPS331AP_INC_MASK;
 
+  // Setup SPI clock high while idle, data valid on clock trailing edge
+  spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 
-void lps331ap_write_byte(uint8_t addr, uint8_t write){
   SPI_CS_CLR(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
-  SPI_WRITE(addr);
-  SPI_WRITE(write);
+
+  SPI_WRITE(read_address);
+
+  SPI_FLUSH();
+
+  for(i=0; i < len; ++i)
+  {
+    SPI_READ(buf[i]);
+  }
+
   SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
+
+  return 0;
 }
 
-void pressure_int_handler(uint8_t port, uint8_t pin){
 
-}
 
-unsigned get_pressure()
+int
+lps331ap_write(uint8_t address, uint16_t len, uint8_t * buf)
 {
-  unsigned pout = 0;
-  unsigned i;
-  uint8_t pout_parts[3];
-  lps331ap_read_bytes(LPS331AP_PRESS_OUT_XL, pout_parts, 3);
-  //For some fucking stupid reason, the highest order bit is byte 1 instead of byte 2
-  pout = pout_parts[2] | pout_parts[0] << 8 | pout_parts[1] << 16;
-  return pout;
+  uint16_t i;
+  uint8_t write_address = address | LPS331AP_INC_MASK;
+
+  spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+
+  SPI_CS_CLR(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
+
+  SPI_WRITE(write_address);
+
+  for(i=0; i<len; ++i){
+    SPI_WRITE(buf[i]);
+  }
+
+  SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
+
+  return 0;
 }
 
-void interrupt_en()
+uint32_t get_pressure()
 {
-  nvic_init();
-  GPIO_SOFTWARE_CONTROL(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
-  GPIO_SET_INPUT(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
-  GPIO_DETECT_EDGE(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
-  GPIO_TRIGGER_SINGLE_EDGE(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
-  GPIO_DETECT_RISING(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
-  GPIO_ENABLE_INTERRUPT(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
-  ioc_set_over(LPS331AP_INT_PORT, LPS331AP_INT_PIN, IOC_OVERRIDE_DIS);
-  nvic_interrupt_enable(LPS331AP_INT_VECTOR);
-  gpio_register_callback(pressure_int_handler, LPS331AP_INT_PORT, LPS331AP_INT_PIN);
+  uint8_t buf[3];
+  lps331ap_read(LPS331AP_PRESS_OUT_XL, 3, buf);
+  return (buf[0] | (buf[1]<<8) | (buf[2]<<16));
 }
+
+// void interrupt_en()
+// {
+//   nvic_init();
+//   GPIO_SOFTWARE_CONTROL(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
+//   GPIO_SET_INPUT(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
+//   GPIO_DETECT_EDGE(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
+//   GPIO_TRIGGER_SINGLE_EDGE(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
+//   GPIO_DETECT_RISING(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
+//   GPIO_ENABLE_INTERRUPT(LPS331AP_INT_BASE, LPS331AP_INT_PIN_MASK);
+//   ioc_set_over(LPS331AP_INT_PORT, LPS331AP_INT_PIN, IOC_OVERRIDE_DIS);
+//   nvic_interrupt_enable(LPS331AP_INT_VECTOR);
+//   gpio_register_callback(pressure_int_handler, LPS331AP_INT_PORT, LPS331AP_INT_PIN);
+// }

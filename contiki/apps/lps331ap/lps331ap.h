@@ -60,8 +60,10 @@ typedef union lps331ap_ctrl_reg1
   } f;
 } lps331ap_ctrl_reg1_t;
 
+// Sample at 12.5 Hz
 static lps331ap_ctrl_reg1_t lps331ap_ctrl_reg1_default = {.value = 0xE2};
 
+// ctrl_reg2
 typedef union lps331ap_ctrl_reg2
 {
   uint8_t value;
@@ -77,7 +79,7 @@ typedef union lps331ap_ctrl_reg2
 static lps331ap_ctrl_reg2_t lps331ap_ctrl_reg2_default = {.value = 0x00};
 static lps331ap_ctrl_reg2_t lps331ap_ctrl_reg2_reset = {.value = 0x82};
 
-
+// ctrl_reg3
 typedef union lps331ap_ctrl_reg3
 {
   uint8_t value;
@@ -91,12 +93,18 @@ typedef union lps331ap_ctrl_reg3
 
 static lps331ap_ctrl_reg3_t lps331ap_ctrl_reg3_default = {.value = 0x04};
 
-int8_t lps331ap_read_byte(uint8_t addr);
-void lps331ap_read_bytes(uint8_t addr, uint8_t * bytes, unsigned size);
-void lps331ap_write_byte(uint8_t addr, uint8_t data);
-void pressure_int_handler(uint8_t port, uint8_t pin);
-unsigned get_pressure();
-void interrupt_en();
+// res_cfg
+typedef union lps332ap_res_cfg
+{
+  uint8_t value;
+} lps331ap_res_cfg_t;
+
+static lps331ap_res_cfg_t lps332ap_res_cfg_default = {.value = LPS331AP_020_NOISE};
+
+void lps331ap_init();
+int lps331ap_read(uint8_t address, uint16_t len, uint8_t * buf);
+int lps331ap_write(uint8_t address, uint16_t len, uint8_t * buf);
+uint32_t get_pressure();
 
 
 #endif /*LPS331AP_H*/
