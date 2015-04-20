@@ -35,7 +35,6 @@
 typedef enum {TEMP_HOLD, TEMP_NOHOLD, TEMP_READ_FROM_RH} TEMP_READ_t;
 typedef enum {RH_HOLD, RH_NOHOLD} HUMD_READ_t;
 
-
 // These are for the user registers
 #define SI7021_RESOLUTION_R12_T14     0x00  // R/W
 #define SI7021_RESOLUTION_R08_T12     0x01  // R/W
@@ -45,6 +44,12 @@ typedef enum {RH_HOLD, RH_NOHOLD} HUMD_READ_t;
 #define SI7021_VDD_OK                 0x00  // R
 #define SI7021_HEATER_ENABLE          0x04  // R/W
 #define SI7021_HEATER_DISABLE         0x00  // R/W
+
+#define WAIT_WHILE(cond) \
+  do { \
+    volatile int8_t i=0; \
+    while(cond) i++; \
+  } while(0)
 
 uint16_t si7021_readTemp(TEMP_READ_t read_type);
 uint16_t si7021_readHumd(HUMD_READ_t read_type);

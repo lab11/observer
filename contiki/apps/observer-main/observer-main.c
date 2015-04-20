@@ -2,6 +2,8 @@
 #include "lps331ap.h"
 #include "si1147.h"
 #include "mpu9250.h"
+#include "si7021.h"
+#include "amn41122.h"
 #include "sys/etimer.h"
 #include "dev/leds.h"
 #include "spi-arch.h"
@@ -23,11 +25,12 @@ PROCESS_THREAD(observer_main_process, ev, data) {
   PROCESS_BEGIN();
 
   int16_t accel_y;
+  uint16_t temp, humd;
   unsigned press;
   si1147_als_data_t als_data; 
-//  etimer_set(&wait_timer, POLL_PERIOD);
-//  leds_toggle(LEDS_BLUE);
-	spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+  etimer_set(&wait_timer, POLL_PERIOD);
+  
+  spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
   i2c_init(GPIO_C_NUM, 5, // SDA
            GPIO_C_NUM, 4, // SCL
            I2C_SCL_FAST_BUS_SPEED);
@@ -35,18 +38,24 @@ PROCESS_THREAD(observer_main_process, ev, data) {
   si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
   mpu9250_init();
   lps331ap_init();
+  amn41122_init();
+
+  // signal that init is done
+  leds_toggle(LEDS_GREEN);
 
   while(1) {
-//    PROCESS_YIELD();
-//    etimer_stop(&wait_timer);
+    PROCESS_YIELD();
+    etimer_stop(&wait_timer);
 
     printf("---------------\n");
-    i2c_buffer_flush();
 
     si1147_als_force_read(&als_data);
     press = lps331ap_get_pressure();
     accel_y = mpu9250_readSensor(MPU9250_ACCEL_YOUT_L, MPU9250_ACCEL_YOUT_H);
-//    etimer_reset(&wait_timer);
+    amn41122_read();
+    temp = si7021_readTemp(TEMP_NOHOLD);
+    humd = si7021_readHumd(RH_NOHOLD);
+    etimer_reset(&wait_timer);
   }
   PROCESS_END();
 }

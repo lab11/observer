@@ -13,6 +13,15 @@
 // the sensor data of the Si7021 are 16bits so you have to read the lower and upper 8bits separately
 // to read from a specific register, write the address of the register you want to read to the slave
 // then read from slave device
+
+static void i2c_buffer_flush() {
+  int i;
+  for (i=0; i < 9; i++) {
+    i2c_master_command(I2C_MASTER_CMD_BURST_SEND_FINISH);
+    WAIT_WHILE(i2c_master_busy());
+  }
+}
+
 uint16_t si7021_readTemp(TEMP_READ_t read_type) {
 
   uint8_t command;
@@ -38,8 +47,7 @@ uint16_t si7021_readTemp(TEMP_READ_t read_type) {
   uint16_t temperature = (((H << 8) + L) * 175.72) / 65536 - 46.85;
 
   leds_toggle(LEDS_GREEN);
-  printf("temp H: %x\n L: %x\n", H, L);
-  printf("temperature: %d\n", temperature);
+  if (SI7021_DBG) printf("si7021:   temp %d\n", temperature);
   return temperature;
 }
 
@@ -59,10 +67,8 @@ uint16_t si7021_readHumd(HUMD_READ_t read_type) {
 
   uint8_t H = receive_bufBase[0];
   uint8_t L = receive_bufBase[1];
-  printf("humd H: %x \n L: %x \n", H, L);
   uint16_t humidity = (((H << 8) + L) * 125) / 65536 - 6;
-  printf("humidity: %d\n", humidity);
-  //leds_toggle(LEDS_BLUE);
+  if (SI7021_DBG) printf("si7021:   humd %d\n", humidity);
   return humidity;
 
 
@@ -109,56 +115,4 @@ void si7021_reset(){
   i2c_single_send(SI7021_SLAVE_ADDRESS, *transmit_bufBase);
   leds_toggle(LEDS_RED);
 
-}
-
-void i2c_bufferflush(){
-  int i;
-  for(i = 0; i < 9; ++i){
-    i2c_master_command(I2C_MASTER_CMD_BURST_SEND_FINISH);
-  }
-
-}
-/*---------------------------------------------------------------------------*/
-PROCESS(si7021_process, "Si7021");
-AUTOSTART_PROCESSES(&si7021_process);
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(si7021_process, ev, data) {
-
-  //PROCESS_BEGIN();
-  //the startup time for SI7021 is 80 ms
-  //etimer_set(&periodic_timer, Si7021_STARTUP_TIME);
-
-  printf("temp_hold: \n");
-
-
-  // Initialize i2c
-  i2c_init(GPIO_C_NUM, 5, GPIO_C_NUM, 4, I2C_SCL_NORMAL_BUS_SPEED);
-  //i2c_master_enable();
-  i2c_set_frequency(I2C_SCL_NORMAL_BUS_SPEED);
-  uint16_t temp = 0;
-  uint16_t humd = 0;
-    //Si7021_write_userreg(Si7021_RESOLUTION_R10_T13 | Si7021_HEATER_DISABLE);
-    //i2c_bufferflush();
-    uint16_t userreg;
-  while(1){
-    //PROCESS_YIELD();    
-
-    //Si7021_reset();
-    //userreg = Si7021_read_userreg();
-    //printf("userreg reset val: %x\n", userreg);
-    //Si7021_write_userreg(Si7021_RESOLUTION_R10_T13 | Si7021_HEATER_DISABLE);
-    userreg = si7021_read_userreg();
-    //i2c_bufferflush();
-
-
-    temp = si7021_readTemp(TEMP_NOHOLD);
-    i2c_bufferflush();
-    humd = si7021_readHumd(RH_NOHOLD);
-    i2c_bufferflush();
-    //userreg = si7021_read_userreg();
-    //i2c_bufferflush();
-  }
-
-  return 0;
-    
 }

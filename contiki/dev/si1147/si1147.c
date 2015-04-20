@@ -9,6 +9,14 @@
 static struct timer si1147_command_timer;
 static struct timer si1147_startup_timer;
 
+static void i2c_buffer_flush() {
+  int i;
+  for (i=0; i < 9; i++) {
+    i2c_master_command(I2C_MASTER_CMD_BURST_SEND_FINISH);
+    WAIT_WHILE(i2c_master_busy());
+  }
+}
+
 // autoincrement disable if reg_addr is anded with SI1147_AUTO_INCR_DISABLE 
 void si1147_write_reg(uint8_t reg_addr, uint8_t data) {
   // second byte is 0/AI/reg_address
@@ -178,12 +186,4 @@ void si1147_irq_handler() {
   rx = si1147_read_reg(SI1147_IRQ_STATUS);
   si1147_write_reg(SI1147_IRQ_STATUS, rx);
   return;
-}
-
-void i2c_buffer_flush() {
-  int i;
-  for (i=0; i < 9; i++) {
-    i2c_master_command(I2C_MASTER_CMD_BURST_SEND_FINISH);
-    WAIT_WHILE(i2c_master_busy());
-  }
 }

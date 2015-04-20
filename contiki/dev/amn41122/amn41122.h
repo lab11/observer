@@ -17,7 +17,7 @@
     while(cond) i++; \
   } while(0)
 
-void amn41122_init_enable();
+void amn41122_init();
 uint8_t amn41122_read();
 void amn41122_irq_enable();
 void amn41122_irq_handler();

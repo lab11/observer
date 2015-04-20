@@ -121,8 +121,6 @@
     while(cond) i++; \
   } while(0)
 
-void i2c_buffer_flush();
-
 typedef union si1147_uint16
 {
   uint16_t val;
@@ -138,8 +136,6 @@ typedef struct si1147_als_data
   si1147_uint16_t ir;
   si1147_uint16_t aux;
 } si1147_als_data_t;
-
-void i2c_buffer_flush();
 
 void si1147_init(uint16_t meas_rate, uint8_t meas_enable);
 void si1147_write_reg(uint8_t reg_addr, uint8_t data);
