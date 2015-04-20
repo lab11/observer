@@ -106,7 +106,7 @@ static lps331ap_res_cfg_t lps332ap_res_cfg_default = {.value = LPS331AP_020_NOIS
 void lps331ap_init();
 int lps331ap_read(uint8_t address, uint16_t len, uint8_t * buf);
 int lps331ap_write(uint8_t address, uint16_t len, uint8_t * buf);
-uint32_t get_pressure();
+uint32_t lps331ap_get_pressure();
 
 
 #endif /*LPS331AP_H*/

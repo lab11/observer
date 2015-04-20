@@ -87,7 +87,7 @@ lps331ap_get_pressure()
   lps331ap_read(LPS331AP_PRESS_OUT_XL, 3, buf);
   val = (buf[0] | (buf[1]<<8) | (buf[2]<<16));
   
-  if (LPS331AP_DBG) printf("lps331ap: read 0x%x\n", val);
+  if (LPS331AP_DBG) printf("lps331ap: read %d\n", val/4096);
   return val;
 }
 
