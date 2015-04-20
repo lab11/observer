@@ -61,7 +61,7 @@ int16_t mpu9250_readSensor(uint8_t reg_addrL, uint8_t reg_addrH) {
   int16_t val = ((H<<8)+L);
 
   if (MPU9250_DBG)
-    printf("mpu9250: read [L-0x%x H-0x%x] <- %d\n", reg_addrL, reg_addrH, val);
+    printf("mpu9250:  read [L-0x%x H-0x%x] <- %d\n", reg_addrL, reg_addrH, val);
 	
   return val;
 }

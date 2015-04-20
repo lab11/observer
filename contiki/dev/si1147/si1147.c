@@ -134,10 +134,7 @@ void si1147_als_read(si1147_als_data_t *data) {
   data->aux.b.hi = si1147_read_reg(SI1147_AUX_DATA1);
   
   if (SI1147_DBG_ALS) {
-    printf("ALS vis: %hd\nALS  ir: %hd\nALS aux: %hd\n",
-      data->vis.val,
-      data->ir.val,
-      data->aux.val);
+    printf("si1147:   ALS vis %hd\n", data->vis.val);
   }
   
   return;

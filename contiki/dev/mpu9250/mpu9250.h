@@ -1,7 +1,7 @@
 #ifndef MPU9250_H
 #define MPU9250_H
 
-#define MPU9250_DBG 0
+#define MPU9250_DBG 1
 
 #define MPU9250_STARTUP_TIME 0.035*CLOCK_SECOND
 

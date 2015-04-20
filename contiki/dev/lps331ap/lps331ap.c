@@ -83,8 +83,12 @@ uint32_t
 lps331ap_get_pressure()
 {
   uint8_t buf[3];
+  uint32_t val;
   lps331ap_read(LPS331AP_PRESS_OUT_XL, 3, buf);
-  return (buf[0] | (buf[1]<<8) | (buf[2]<<16));
+  val = (buf[0] | (buf[1]<<8) | (buf[2]<<16));
+  
+  if (LPS331AP_DBG) printf("lps331ap: read 0x%x\n", val);
+  return val;
 }
 
 // void interrupt_en()
