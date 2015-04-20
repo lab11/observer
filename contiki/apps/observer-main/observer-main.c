@@ -11,8 +11,23 @@
 #include "spi.h"
 #include "gpio.h"
 #include "i2c.h"
+// networking
+#include "checksum.h"
+#include "coilcube_ip.h"
+#include "sys/rtimer.h"
+#include "dev/button-sensor.h"
+#include "dev/watchdog.h"
+#include "dev/serial-line.h"
+#include "dev/sys-ctrl.h"
+#include "net/rime/broadcast.h"
+#include "net/ip/uip.h"
+#include "net/ip/uip-udp-packet.h"
+#include "net/ip/uiplib.h"
+#include "net/ipv6/uip-ds6-route.h"
+#include "net/ipv6/uip-ds6-nbr.h"
 
 #include <stdio.h>
+#include <stdint.h>
 
 static struct etimer wait_timer;
 static struct timer test_timer;
@@ -59,6 +74,9 @@ PROCESS_THREAD(observer_main_process, ev, data) {
     temp = si7021_readTemp(TEMP_NOHOLD);
     humd = si7021_readHumd(RH_NOHOLD);
     mic_amp = adc121c021_read_reg16(ADC121C021_CONV_RESULT);
+
+
+
     etimer_reset(&wait_timer);
   }
   PROCESS_END();
