@@ -4,6 +4,7 @@
 #include "mpu9250.h"
 #include "si7021.h"
 #include "amn41122.h"
+#include "adc121c021.h"
 #include "sys/etimer.h"
 #include "dev/leds.h"
 #include "spi-arch.h"
@@ -28,6 +29,7 @@ PROCESS_THREAD(observer_main_process, ev, data) {
   uint16_t temp, humd;
   unsigned press;
   si1147_als_data_t als_data; 
+  uint16_t mic_amp;
   etimer_set(&wait_timer, POLL_PERIOD);
   
   spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
@@ -39,6 +41,7 @@ PROCESS_THREAD(observer_main_process, ev, data) {
   mpu9250_init();
   lps331ap_init();
   amn41122_init();
+  adc121c021_config();
 
   // signal that init is done
   leds_toggle(LEDS_GREEN);
@@ -55,6 +58,7 @@ PROCESS_THREAD(observer_main_process, ev, data) {
     amn41122_read();
     temp = si7021_readTemp(TEMP_NOHOLD);
     humd = si7021_readHumd(RH_NOHOLD);
+    mic_amp = adc121c021_read_reg16(ADC121C021_CONV_RESULT);
     etimer_reset(&wait_timer);
   }
   PROCESS_END();
