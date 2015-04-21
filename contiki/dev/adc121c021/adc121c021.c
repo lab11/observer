@@ -69,8 +69,7 @@ uint16_t adc121c021_read_reg16(uint16_t reg_addr) {
   uint16_t data;
   i2c_buffer_flush();
 
-  i2c_single_send(ADC121C021_DEFAULT_SLAVE_ADDR, *tx);
-  i2c_single_receive(ADC121C021_DEFAULT_SLAVE_ADDR, rx);
+  i2c_single_send(ADC121C021_DEFAULT_SLAVE_ADDR, *tx); 
   i2c_burst_receive(ADC121C021_DEFAULT_SLAVE_ADDR, rx, 2);
 
   data = rx[0];
