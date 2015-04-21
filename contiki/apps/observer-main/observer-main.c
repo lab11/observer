@@ -150,7 +150,7 @@ PROCESS_THREAD(observer_main_process, ev, data) {
     amn41122_read();
     temp = si7021_readTemp(TEMP_NOHOLD);
     humd = si7021_readHumd(RH_NOHOLD);
-    mic_amp = adc121c021_read_reg16(ADC121C021_CONV_RESULT);
+    mic_amp = adc121c021_read_amplitude();
 
     pack_data(accel_x, accel_y, accel_z, humd, als_data, mic_amp, press, temp);
     send_handler(ev, data);

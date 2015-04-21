@@ -12,7 +12,18 @@ void adc121c021_config(){
 
 uint16_t adc121c021_read_amplitude() {
 
-  return adc121c021_read_reg16(ADC121C021_CONV_RESULT);
+  uint16_t max = 0;
+  uint16_t count = 0;
+  uint16_t temp = 0;
+  for(count = 0; count < 100; ++count){
+    temp = adc121c021_read_reg16(ADC121C021_CONV_RESULT);
+    if (max < temp) max = temp;
+  }
+
+  if (ADC121C021_DBG)
+    printf("adc121c021: %d\n", (max - 2560) & 0x0FFF);
+  
+  return max - 2560;
 }
 
 void adc121c021_write_reg8(uint8_t reg_addr, uint8_t data) {
@@ -66,8 +77,7 @@ uint16_t adc121c021_read_reg16(uint16_t reg_addr) {
   data = data << 8;
   data |= rx[1];
 
-  if (ADC121C021_DBG)
-    printf("adc121c021: 0x%x\n", data & 0x0FFF);
+ 
   return data;
 }
 
