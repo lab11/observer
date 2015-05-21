@@ -12,8 +12,17 @@
 #define MPU9250_CS_PORT           GPIO_B_NUM
 #define MPU9250_CS_PIN			  3
 
+// GPIO Interrupt port and pin
+#define MPU9250_INT_PORT           GPIO_B_NUM
+#define MPU9250_INT_PIN            4
+#define MPU9250_INT_VECTOR         NVIC_INT_GPIO_PORT_B
+
 #define MPU9250_READ_MASK		   0x80
 #define MPU9250_WRITE_MASK		   0x7F
+#define MPU9250_ACCEL_ENABLE_MASK  0xC7
+#define MPU9250_GYRO_DISABLE_MASK  0x07
+#define MPU9250_ACCEL2_DLPF_ENABLE_MASK 0x08
+#define MPU9250_ACCEL2_DLPF_184_MASK 0x01
 
 // Register names according to the datasheet.
 // According to the InvenSense document
@@ -144,5 +153,18 @@ void mpu9250_writeSensor(uint8_t reg_addr, uint8_t data);
 *  of the register you want to read to the slave then read from slave device
 */
 int16_t mpu9250_readSensor(uint8_t reg_addrL, uint8_t reg_addrH);
+
+/*	
+*	\brief		Enables Wake-On-Motion Interrupt
+*				To be called immediately after mpu9250_init()
+*	\param WOM_Threshold	8 bit value setting the threshold limit
+*							LSB = 4mg, Range 0mg to 1024mg
+*	\param Wakeup_Frequency	8 bit value Sets the frequency of waking up the chip
+*							to take a sample of accel data at the low power accel 
+*							Output Data Rate
+*/
+void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency);
+
+void accel_irq_handler(uint8_t port, uint8_t pin);
 
 #endif /*MPU9250_H*/
