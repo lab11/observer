@@ -67,19 +67,22 @@ static struct uip_udp_conn *client_conn;
 /*---------------------------------------------------------------------------*/
 /*----------------------- END NETWORKING SETUP ------------------------------*/
 
+
 static void send_handler(process_event_t ev, process_data_t data);
 static void pack_data(uint16_t accel_x, uint16_t accel_y, uint16_t accel_z, 
                           uint16_t humid, si1147_als_data_t light, uint16_t mic, 
-                          uint32_t press, uint16_t temp);
+                          uint32_t press, uint16_t temp, uint8_t pir);
+
+
 pkt_data_t pkt_data = {PROFILE_ID, SEHNSOR_VERSION, /*accel*/0x01, 0x02, 0x03, 0x04, 0x05, 0x06, /*humid*/0x07, 0x08, 
-                        /*light*/0x09, 0x0A, /*mic*/ 0x0B, 0x0C, /*press*/0x0D, 0x0E, 0x0F, /*temp*/0x10, 0x11, /*stuff*/0x00, 
+                        /*light*/0x09, 0x0A, /*mic*/ 0x0B, 0x0C, /*press*/0x0D, 0x0E, 0x0F, /*temp*/0x10, 0x11, /*pir*/0x00, 
                         /*checksum*/0xFF, 0xFF, 0, 0, 0xBB};
+uint32_t packet_count = 0;
 
 
-
-static struct etimer wait_timer;
+//static struct etimer wait_timer;
 static struct timer test_timer;
-#define POLL_PERIOD CLOCK_SECOND
+#define POLL_PERIOD 0.5*CLOCK_SECOND
 
 /*---------------------------------------------------------------------------*/
 PROCESS(observer_main_process, "observer-main");
@@ -93,7 +96,8 @@ PROCESS_THREAD(observer_main_process, ev, data) {
   unsigned press;
   si1147_als_data_t als_data; 
   uint16_t mic_amp;
-  etimer_set(&wait_timer, POLL_PERIOD);
+  uint8_t pir;
+  //etimer_set(&wait_timer, POLL_PERIOD);
   
   spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
   i2c_init(GPIO_C_NUM, 5, // SDA
@@ -102,8 +106,12 @@ PROCESS_THREAD(observer_main_process, ev, data) {
 
   si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
   mpu9250_init();
+  mpu9250_motion_interrupt_init(0xF0, 0x08);
+
   lps331ap_init();
   amn41122_init();
+  amn41122_irq_enable();
+
   adc121c021_config();
 
 
@@ -137,8 +145,13 @@ PROCESS_THREAD(observer_main_process, ev, data) {
   leds_toggle(LEDS_GREEN);
 
   while(1) {
+    //PROCESS_WAIT_EVENT();
+
+    asm("CPSIE i");
+    printf("after interrupt enable in process?\n");
+
     PROCESS_YIELD();
-    etimer_stop(&wait_timer);
+    //etimer_stop(&wait_timer);
 
     printf("---------------\n");
 
@@ -147,15 +160,22 @@ PROCESS_THREAD(observer_main_process, ev, data) {
     accel_x = mpu9250_readSensor(MPU9250_ACCEL_XOUT_L, MPU9250_ACCEL_XOUT_H);
     accel_y = mpu9250_readSensor(MPU9250_ACCEL_YOUT_L, MPU9250_ACCEL_YOUT_H);
     accel_z = mpu9250_readSensor(MPU9250_ACCEL_ZOUT_L, MPU9250_ACCEL_ZOUT_H);
-    amn41122_read();
+    pir = amn41122_read();
     temp = si7021_readTemp(TEMP_NOHOLD);
     humd = si7021_readHumd(RH_NOHOLD);
     mic_amp = adc121c021_read_amplitude();
 
-    pack_data(accel_x, accel_y, accel_z, humd, als_data, mic_amp, press, temp);
+    pack_data(accel_x, accel_y, accel_z, humd, als_data, mic_amp, press, temp, pir);
     send_handler(ev, data);
+    printf("PACKETS SENT: %d\n", ++packet_count);
 
-    etimer_reset(&wait_timer);
+    //mpu9250_readByte(MPU9250_INT_STATUS);
+    //GPIO_CLEAR_INTERRUPT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
+    //nvic_interrupt_unpend(NVIC_INT_GPIO_PORT_B);
+    //GPIO_ENABLE_INTERRUPT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
+    //GPIO_ENABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
+    
+    //etimer_reset(&wait_timer);
   }
   PROCESS_END();
 }
@@ -171,6 +191,7 @@ PROCESS_THREAD(observer_main_process, ev, data) {
 
 
 /*---------------------------------------------------------------------------*/
+
 static void
 send_handler(process_event_t ev, process_data_t data)
 {
@@ -188,7 +209,7 @@ send_handler(process_event_t ev, process_data_t data)
 
 static void pack_data(uint16_t accel_x, uint16_t accel_y, uint16_t accel_z, 
                           uint16_t humid, si1147_als_data_t light, uint16_t mic, 
-                          uint32_t press, uint16_t temp) {
+                          uint32_t press, uint16_t temp, uint8_t pir) {
 
   uint8_t accelx1 = accel_x & 0xFF;
   uint8_t accelx2 = (accel_x & 0xFF00) >> 8;
@@ -215,14 +236,14 @@ static void pack_data(uint16_t accel_x, uint16_t accel_y, uint16_t accel_z,
 
   uint16_t checksums = checksum(accelx1, accelx2, accely1, accely2, accelz1, accelz2,
                                 humid1, humid2, light1, light2, mic1, mic2, press1,
-                                press2, press3, temp1, temp2);
+                                press2, press3, temp1, temp2, pir);
 
   uint8_t check1 = checksums & 0x0FF;
   uint8_t check2 = (checksums & 0xFF00) >> 8;
 
   pkt_data_t new_pkt_data = {PROFILE_ID, SEHNSOR_VERSION, accelx1, accelx2, accely1, accely2, accelz1, 
                 accelz2, humid1, humid2, light1, light2, mic1, mic2, press1,
-                press2, press3, temp1, temp2, 0x00, check1, check2, pkt_data.counter, pkt_data.seq_no, 0xBB};
+                press2, press3, temp1, temp2, pir, check1, check2, pkt_data.counter, pkt_data.seq_no, 0xBB};
   pkt_data = new_pkt_data;
 
   return;
