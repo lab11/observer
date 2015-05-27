@@ -12,7 +12,7 @@
 void
 lps331ap_init()
 {
-  spi_cs_init(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
+  spix_cs_init(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
   SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
 
   lps331ap_write(LPS331AP_CTRL_REG2, 1, &lps331ap_ctrl_reg2_reset.value);
@@ -38,7 +38,7 @@ lps331ap_read(uint8_t address, uint16_t len, uint8_t * buf)
   uint8_t read_address = address | LPS331AP_READ_MASK | LPS331AP_INC_MASK;
 
   // Setup SPI clock high while idle, data valid on clock trailing edge
-  spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+  spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 
   SPI_CS_CLR(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
 
@@ -64,7 +64,7 @@ lps331ap_write(uint8_t address, uint16_t len, uint8_t * buf)
   uint16_t i;
   uint8_t write_address = address | LPS331AP_INC_MASK;
 
-  spi_set_mode(SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+  spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 
   SPI_CS_CLR(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
 

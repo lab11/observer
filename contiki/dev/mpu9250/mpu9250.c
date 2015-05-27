@@ -15,7 +15,8 @@ static struct timer accel_int_timer;
 extern const struct process observer_main_process;
 
 void mpu9250_init() {
-	spi_cs_init(MPU9250_CS_PORT, MPU9250_CS_PIN);
+	spix_cs_init(MPU9250_CS_PORT, MPU9250_CS_PIN);
+	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
   // Clear sleep bit to start sensor
   mpu9250_writeSensor(MPU9250_PWR_MGMT_1, 0x80); //80
@@ -36,9 +37,11 @@ uint8_t mpu9250_readByte(uint8_t reg_addr) {
 
 	reg_addr |= MPU9250_READ_MASK;
 
+	spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+
 	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
 	SPI_WRITE(reg_addr);
-  SPI_FLUSH();
+  	SPI_FLUSH();
 	SPI_READ(data);
 	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
@@ -46,6 +49,8 @@ uint8_t mpu9250_readByte(uint8_t reg_addr) {
 }
 
 void mpu9250_writeSensor(uint8_t reg_addr, uint8_t data) {
+	
+	spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 
 	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
   SPI_WRITE(reg_addr & MPU9250_WRITE_MASK);

@@ -14,7 +14,7 @@
 #define STARTUP_CONF_VERBOSE 0
 #define UART_CONF_ENABLE 1
 #define WATCHDOG_CONF_ENABLE 0
-
+#define SPI_CONF_DEFAULT_INSTANCE 0
 
 
 // Networking: 802.15.4
