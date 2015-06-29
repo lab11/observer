@@ -3104,7 +3104,7 @@ This Sunstone Circuits 2 Layer .DRU has been set to cover our minimum requiremen
 <via x="26.416" y="28.448" extent="1-16" drill="0.254"/>
 <contactref element="J5" pad="2"/>
 <via x="42.418" y="29.972" extent="1-16" drill="0.254"/>
-<via x="38.608" y="28.702" extent="1-16" drill="0.254"/>
+<via x="37.211" y="27.3685" extent="1-16" drill="0.254"/>
 <via x="31.242" y="26.162" extent="1-16" drill="0.254"/>
 <wire x1="33.309" y1="28.678" x2="33.309" y2="30.515" width="0.2032" layer="1"/>
 <wire x1="33.309" y1="30.515" x2="33.58006875" y2="30.78606875" width="0.2032" layer="1"/>
@@ -3224,6 +3224,7 @@ This Sunstone Circuits 2 Layer .DRU has been set to cover our minimum requiremen
 <via x="25.4" y="17.526" extent="1-16" drill="0.254"/>
 <wire x1="6.858" y1="15.875" x2="9.652" y2="15.875" width="0.2032" layer="1"/>
 <wire x1="6.7945" y1="19.431" x2="9.4615" y2="19.431" width="0.2032" layer="16"/>
+<via x="37.592" y="31.496" extent="1-16" drill="0.254"/>
 </signal>
 <signal name="N$3">
 <contactref element="C4" pad="1"/>
@@ -3789,9 +3790,6 @@ This Sunstone Circuits 2 Layer .DRU has been set to cover our minimum requiremen
 <signal name="N$2">
 <contactref element="J5" pad="3"/>
 </signal>
-<signal name="N$20">
-<contactref element="J5" pad="4"/>
-</signal>
 <signal name="UNUSED3">
 <contactref element="J5" pad="6"/>
 </signal>
@@ -4087,6 +4085,13 @@ This Sunstone Circuits 2 Layer .DRU has been set to cover our minimum requiremen
 <wire x1="48.194" y1="13.142" x2="48.514" y2="13.462" width="0.254" layer="1"/>
 <via x="48.514" y="13.462" extent="1-16" drill="0.254"/>
 <wire x1="48.514" y1="13.462" x2="48.895" y2="13.97" width="0.254" layer="16"/>
+<contactref element="J5" pad="4"/>
+<wire x1="37.084" y1="33.274" x2="38.1" y2="33.274" width="0.254" layer="1"/>
+<wire x1="38.1" y1="33.274" x2="38.608" y2="32.766" width="0.254" layer="1"/>
+<wire x1="38.608" y1="32.766" x2="38.608" y2="29.464" width="0.254" layer="1"/>
+<via x="38.608" y="29.464" extent="1-16" drill="0.254"/>
+<wire x1="38.608" y1="29.464" x2="39.4631" y2="28.3549" width="0.254" layer="16"/>
+<wire x1="39.4631" y1="28.3549" x2="40.2669" y2="28.3549" width="0.254" layer="16"/>
 </signal>
 </signals>
 </board>

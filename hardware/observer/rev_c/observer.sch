@@ -11365,13 +11365,6 @@ Now with smashable polarity marks!</description>
 <label x="17.78" y="30.48" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
-<net name="N$20" class="0">
-<segment>
-<pinref part="J5" gate="G$1" pin="4"/>
-<wire x1="35.56" y1="30.48" x2="30.48" y2="30.48" width="0.1524" layer="91"/>
-<label x="35.56" y="30.48" size="1.27" layer="95" xref="yes"/>
-</segment>
-</net>
 <net name="UNUSED3" class="0">
 <segment>
 <pinref part="J5" gate="G$1" pin="6"/>
@@ -11385,6 +11378,11 @@ Now with smashable polarity marks!</description>
 <wire x1="27.94" y1="88.9" x2="27.94" y2="78.74" width="0.1524" layer="91"/>
 <wire x1="27.94" y1="78.74" x2="38.1" y2="78.74" width="0.1524" layer="91"/>
 <label x="38.1" y="78.74" size="1.4224" layer="95" xref="yes"/>
+</segment>
+<segment>
+<pinref part="J5" gate="G$1" pin="4"/>
+<wire x1="35.56" y1="30.48" x2="30.48" y2="30.48" width="0.1524" layer="91"/>
+<label x="35.56" y="30.48" size="1.27" layer="95" xref="yes"/>
 </segment>
 </net>
 </nets>
