@@ -9,8 +9,7 @@
 #include "sys/etimer.h"
 #include "dev/leds.h"
 #include "lpm.h"
-#include "scb.h"
-#include "sys-ctrl.h"
+
 #include "spi-arch.h"
 #include "spi.c"
 #include "assert.h"
@@ -18,8 +17,10 @@
 #include "stdbool.h"
 #include "gpio.h"
 #include "nvic.h"
-#include "smwdthrosc.h"
+#include "net/netstack.h"
+
 #include "cc2538-rf.h"
+#include "net/packetbuf.h"
 #include "sys/rtimer.h"
 //#include "vtimer-arch.h"
 
@@ -30,92 +31,43 @@ static uint8_t counter = 0;
 static struct rtimer my_timer;
 static struct rtimer my_timer2;
 
-#define SYS_CTRL_TIMEOUT	0x0000FFFF
-#define SYS_CTRL_PERIPH_INDEX(a) (((a) >> 8) & 0xF)
-#define SYS_CTRL_PERIPH_MASKBIT(a) (0x00000001 << ((a) & 0xF))
+volatile uint8_t rtimer_expired = 0;
+volatile uint8_t accel_event = 0;
+volatile uint8_t motion_event = 0;
+
 
 #define assert_wfi() do { asm("wfi"::); } while(0)
 
-static const uint32_t g_pui32DCGDRegs[] = {
-	SYS_CTRL_DCGCGPT,
-	SYS_CTRL_DCGCSSI,
-	SYS_CTRL_DCGCUART,
-	SYS_CTRL_DCGCI2C,
-	SYS_CTRL_DCGCSEC,
-	SYS_CTRL_DCGCRFC
-};
 
-void SysCtrlClockSet(bool bExternalOsc32k, bool bInternalOsc, uint32_t ui32SysDiv);
-void SysCtrlIOClockSet(uint32_t ui32IODiv);
-void __attribute__((naked))
-SysCtrlDelay(uint32_t ui32Count) {
-	__asm(	"	subs	r0, #1\n"
-			"	bne 	SysCtrlDelay\n"
-			"	bx 		lr");
-}
-void SysCtrlPeripheralDeepSleepDisable(uint32_t ui32Peripheral);
-void SysCtrlPowerModeSet(uint32_t ui32PowerMode);
-void GPIOIntWakeupEnable(uint32_t ui32Config);
-uint32_t SleepModeTimerCountGet(void);
-void SleepModeTimerCompareSet(uint32_t ui32Compare);
-void SysCtrlDeepSleep(void);
+void setup_before_resume(void);
+void cleanup_before_sleep(void);
+static void periodic_rtimer(struct rtimer *rt, void* ptr);
 
 #define PERIOD_T 30*RTIMER_SECOND
 #define PERIOD_T2 45*RTIMER_SECOND
 
-static void leds_go(uint8_t count){
-
- //the shift is due to the change on the leds in the Tmote Sky platform
-		leds_off(LEDS_ALL);
-       if (count % 3 == 0) {
-       	leds_on(LEDS_GREEN);
-       } else if (count % 3 == 1) {
-       	leds_on(LEDS_BLUE);
-       } else if (count % 3 == 2) {
-       	leds_on(LEDS_RED);
-       } else {
-       	//
-       }
-}
-
-
-static void
-select_16_mhz_rcosc(void)
-{
-  /*
-   * Power up both oscillators in order to speed up the transition to the 32-MHz
-   * XOSC after wake up.
-   */
-  REG(SYS_CTRL_CLOCK_CTRL) &= ~SYS_CTRL_CLOCK_CTRL_OSC_PD;
-
-  /*First, make sure there is no ongoing clock source change */
-  while((REG(SYS_CTRL_CLOCK_STA) & SYS_CTRL_CLOCK_STA_SOURCE_CHANGE) != 0);
-
-  /* Set the System Clock to use the 16MHz RC OSC */
-  REG(SYS_CTRL_CLOCK_CTRL) |= SYS_CTRL_CLOCK_CTRL_OSC;
-
-  /* Wait till it's happened */
-  while((REG(SYS_CTRL_CLOCK_STA) & SYS_CTRL_CLOCK_STA_OSC) == 0);
-}
 
 /*---------------------------------------------------------------------------------*/
 /*
 You can change it using if/OR clauses to regulate the period... 
 this is just an example
 */
-static char periodic_rtimer(struct rtimer *rt, void* ptr){
-     uint8_t ret;
+// static char periodic_rtimer(struct rtimer *rt, void* ptr){
+//      uint8_t ret;
 
-     //leds_go(counter++);   //u gonna get the led counting from 0-7 
-     printf("time now: %d\n", RTIMER_NOW());
-     printf("timer plus period: %d\n", RTIMER_NOW() + PERIOD_T);
-     //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, 
-     //           (void (*)(struct rtimer *, void *))periodic_rtimer, NULL);
-     //if(ret){
-     //    printf("Error Timer: %u\n", ret);
-     //}
-   return 1;
-}
+//      //leds_go(counter++);   //u gonna get the led counting from 0-7 
+//      printf("time now: %d\n", RTIMER_NOW());
+//      printf("timer plus period: %d\n", RTIMER_NOW() + PERIOD_T);
+
+//      //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, (void*)periodic_rtimer, NULL);
+//      process_poll(&observer_lp_process);
+//      //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, 
+//      //           (void (*)(struct rtimer *, void *))periodic_rtimer, NULL);
+//      //if(ret){
+//      //    printf("Error Timer: %u\n", ret);
+//      //}
+//    return 1;
+// }
 
 static char periodic_rtimer2(struct rtimer *rt, void* ptr) {
 	 printf("time now2: %d\n", RTIMER_NOW());
@@ -195,8 +147,16 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 	//GPIO_SET_INPUT(GPIO_PORT_TO_BASE(RV3049_INT_N_PORT_NUM),
     //             GPIO_PIN_MASK(RV3049_INT_N_PIN));
 	static struct etimer et;
+	static uint8_t buf[7];
+	buf[0] = 1;
+	buf[1] = 2;
+	buf[2] = 3;
+	buf[3] = 4;
+	buf[4] = 5;
+	buf[5] = 6;
 
-//cc2538_rf_driver.off();
+	//cc2538_rf_driver.off();
+	//NETSTACK_RADIO.off();
 	//select_16_mhz_rcosc();
 	//REG(SCB_SYSCTRL) |= SCB_SYSCTRL_SLEEPDEEP;
 	//REG(SYS_CTRL_PMCTL) = SYS_CTRL_PMCTL_PM2;
@@ -207,14 +167,19 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 	mpu9250_motion_interrupt_init(0x0F, 0x06);
 
-	
-	uint8_t press = 0;
+	//CC2538_RF_CSP_ISRFOFF();
+
+	cleanup_before_sleep();
+	//cc2538_rf_driver.off();
+	ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, &periodic_rtimer, NULL);
+
+	//uint8_t press = 0;
 	while(1) {
 		//leds_toggle(LEDS_GREEN);
 		//static struct etimer et;
-		etimer_set(&et, 5*CLOCK_SECOND);
+		// etimer_set(&et, 5*CLOCK_SECOND);
 		//cc2538_rf_driver.off();
-		CC2538_RF_CSP_ISRFOFF();
+		// CC2538_RF_CSP_ISRFOFF();
 		//spix_disable(0);
 		//REG(SYS_CTRL_SCGCSSI) &= ~(1);
 		//REG(SYS_CTRL_DCGCSSI) &= ~(1);
@@ -231,7 +196,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 		/**** test ***/
 		//printf("SET RTIMER1\n");
-		ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, (void*)periodic_rtimer, NULL);
+		// ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, (void*)periodic_rtimer, NULL);
 		//printf("SET_RTIMER2\n");
 		//ret2 = rtimer_set(&my_timer2, RTIMER_NOW() + PERIOD_T2, 1 , (void*)periodic_rtimer2, NULL);
 
@@ -239,11 +204,48 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 		//lps331ap_power_down();
 
-		cleanup_before_sleep();
+		// cleanup_before_sleep();
 		//printf("GOING TO SLEEP\n");
-		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-		//PROCESS_YIELD();
+		// PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+		//printf("YIELDING\n");
+		PROCESS_YIELD();
 		setup_before_resume();
+
+		//printf("UNDER YIELD\n");
+
+		/* check who woke me up */
+		if (rtimer_expired) {
+			rtimer_expired = 0;
+		} else if (accel_event) {
+			accel_event = 0;
+
+		} else if (motion_event) {
+			motion_event = 0;
+		}
+
+		uint32_t press = lps331ap_one_shot();// lps331ap_one_shot();
+		//printf("PRESS: %d\n", press);
+		packetbuf_copyfrom(buf, 6);
+		cc2538_on_and_transmit();
+		//cc2538_rf_driver.on();
+		//cc2538_rf_driver.send(buf, 6);
+		//cc2538_rf_driver.off();
+		//if (cc2538_on_and_transmit() != 0) {
+		//	leds_toggle(LEDS_RED);
+		//}
+		//else {
+		//	leds_toggle(LEDS_GREEN);
+		//}
+		CC2538_RF_CSP_ISRFOFF();
+
+
+		ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, &periodic_rtimer, NULL);
+		//if (ret) {
+		//	printf("rtimer set error\n");
+		//}
+
+		cleanup_before_sleep();
+		// setup_before_resume();
 
 		//printf("PRESS: %d\n", lps331ap_one_shot());
 		//lps331ap_power_up();
@@ -325,130 +327,29 @@ void cleanup_before_sleep(void) {
 }
 
 
+static void periodic_rtimer(struct rtimer *rt, void* ptr){
+	INTERRUPTS_DISABLE();
+	rtimer_expired = 1;
 
-void SysCtrlClockSet(bool bExternalOsc32k, bool bInternalOsc, uint32_t ui32SysDiv) {
-	uint32_t ui32STA;
-	uint32_t ui32Reg;
-	uint32_t ui32TimeoutVal;
-	uint32_t ui32Osc;
+     uint8_t ret;
 
-	//
-	// Enable AMP detect to make sure XOSC starts correctly
-	// 
-	if(!bInternalOsc) {
-		ui32Reg = REG(SYS_CTRL_CLOCK_CTRL) | SYS_CTRL_CLOCK_CTRL_AMP_DET;
-		REG(SYS_CTRL_CLOCK_CTRL) = ui32Reg;
-	}
+     //leds_go(counter++);   //u gonna get the led counting from 0-7 
+     printf("time now: %d\n", RTIMER_NOW());
+     printf("timer plus period: %d\n", RTIMER_NOW() + PERIOD_T);
 
-	//
-	// Set 32kHz clock, Osc and SysDiv
-	//
-	ui32Reg = REG(SYS_CTRL_CLOCK_CTRL);
-	ui32Reg &= ~(SYS_CTRL_CLOCK_CTRL_OSC32K | SYS_CTRL_CLOCK_CTRL_OSC | SYS_CTRL_CLOCK_CTRL_SYS_DIV);
-
-	if(!bExternalOsc32k) {
-		ui32Reg |= SYS_CTRL_CLOCK_CTRL_OSC32K;
-	}
-
-	ui32Osc = (bInternalOsc) ? SYS_CTRL_CLOCK_CTRL_OSC : 0;
-	ui32Reg |= ui32Osc;
-	ui32Reg |= ui32SysDiv;
-	REG(SYS_CTRL_CLOCK_CTRL) = ui32Reg;
-
-	//
-	// If we have changed Osc settings, wait until change happens
-	//
-	ui32STA = REG(SYS_CTRL_CLOCK_STA);
-	ui32TimeoutVal = 0;
-	while((ui32Osc != (ui32STA & SYS_CTRL_CLOCK_CTRL_OSC)) && (ui32TimeoutVal < SYS_CTRL_TIMEOUT)) {
-		SysCtrlDelay(16);
-		ui32STA = REG(SYS_CTRL_CLOCK_STA);
-		ui32TimeoutVal++;
-	}
-
-	if(!(ui32TimeoutVal < SYS_CTRL_TIMEOUT)) {
-		printf("ERROR!\n");
-		return;	
-	}
-
-
-}
-
-void SysCtrlIOClockSet(uint32_t ui32IODiv) {
-	uint32_t ui32RegVal;
-
-	ui32RegVal = REG(SYS_CTRL_CLOCK_CTRL);
-	ui32RegVal &= ~SYS_CTRL_CLOCK_CTRL_IO_DIV; // mask
-	ui32RegVal |= (ui32IODiv << 8); // shift; 8 = SYS_CTRL_CLOCK_CTRL_IO_DIV_S
-	REG(SYS_CTRL_CLOCK_CTRL) = ui32RegVal;
-}
-
-void SysCtrlPeripheralDeepSleepDisable(uint32_t ui32Peripheral) {
-	REG(g_pui32DCGDRegs[SYS_CTRL_PERIPH_INDEX(ui32Peripheral)]) &= ~(SYS_CTRL_PERIPH_MASKBIT(ui32Peripheral));
+     //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, (void*)periodic_rtimer, NULL);
+     process_poll(&observer_lp_process);
+     //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, 
+     //           (void (*)(struct rtimer *, void *))periodic_rtimer, NULL);
+     //if(ret){
+     //    printf("Error Timer: %u\n", ret);
+     //}
+     INTERRUPTS_ENABLE();
+   return;
 }
 
 
-void SysCtrlPowerModeSet(uint32_t ui32PowerMode) {
-	REG(SYS_CTRL_PMCTL) = ui32PowerMode;
-}
 
-void GPIOIntWakeupEnable(uint32_t ui32Config) {
-	REG(SYS_CTRL_IWE) |= ui32Config;
-}
-
-uint32_t SleepModeTimerCountGet(void) {
-	uint32_t ui32Val;
-
-	ui32Val = REG(SMWDTHROSC_ST0);
-	ui32Val |= REG(SMWDTHROSC_ST1) << 8;
-	ui32Val |= REG(SMWDTHROSC_ST2) << 16;
-	ui32Val |= REG(SMWDTHROSC_ST3) << 24;
-
-	return ui32Val;
-}
-
-void SleepModeTimerCompareSet(uint32_t ui32Compare) {
-	// Wait for ST0, ST3 regs to be ready for writing
-	while(!(REG(SMWDTHROSC_STLOAD) & SMWDTHROSC_STLOAD_STLOAD))
-	{
-	}
-
-	REG(SMWDTHROSC_ST3) = (ui32Compare >> 24) & 0x000000FF;
-	REG(SMWDTHROSC_ST2) = (ui32Compare >> 16) & 0x000000FF;
-	REG(SMWDTHROSC_ST1) = (ui32Compare >>  8) & 0x000000FF;
-	REG(SMWDTHROSC_ST0) = (ui32Compare) & 0x000000FF;
-}
-
-void SysCtrlDeepSleep(void) {
-#ifndef NO_CLOCK_DIVIDER_RESTORE
-		bool bRestoreSys;
-		bool bRestoreIO;
-		uint32_t ui32Reg;
-
-		ui32Reg = REG(SYS_CTRL_CLOCK_STA);
-		bRestoreSys = (ui32Reg & SYS_CTRL_CLOCK_STA_SYS_DIV) == 0;
-		bRestoreIO = (ui32Reg & SYS_CTRL_CLOCK_STA_IO_DIV) == 0;
-		if (bRestoreSys || bRestoreIO) {
-			ui32Reg = REG(SYS_CTRL_CLOCK_CTRL);
-			ui32Reg |= bRestoreSys ? 0x1 : 0x0;
-			ui32Reg |= bRestoreIO ? 0x100 : 0x0;
-			REG(SYS_CTRL_CLOCK_CTRL) = ui32Reg;
-		}
-#endif
-		// Enable deep sleep
-		// 0xE000ED10 = NVIC_SYS_CTRL
-		// 0x00000004 = NVIC_SYS_CTRL_SLEEPDEEP
-		REG(0xE000ED10) |= 0x00000004;
-
-#ifndef NO_CLOCK_DIVIDER_RESTORE
-		if(bRestoreSys || bRestoreIO) {
-			ui32Reg = REG(SYS_CTRL_CLOCK_CTRL);
-			ui32Reg &= (bRestoreSys) ? ~SYS_CTRL_CLOCK_CTRL_SYS_DIV : 0xFFFFFFFF;
-			ui32Reg &= (bRestoreIO) ? ~SYS_CTRL_CLOCK_CTRL_IO_DIV : 0xFFFFFFFF;
-			REG(SYS_CTRL_CLOCK_CTRL) = ui32Reg;
-		}
-#endif
-}
 
 void SleepModeIntHandler(void) {
 	printf("HELLOW\n");
