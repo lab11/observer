@@ -15,6 +15,9 @@
 #define LPS331AP_INT_BASE           GPIO_PORT_TO_BASE(LPS331AP_INT_PORT)
 #define LPS331AP_INT_PIN_MASK       GPIO_PIN_MASK(LPS331AP_INT_PIN)
 
+#define LPS331AP_POWER_UP_MASK      0x80
+#define LPS331AP_POWER_DOWN_MASK    0x7F
+
 // Register Mapping
 #define LPS331AP_REF_P_XL           0x08
 #define LPS331AP_REF_P_L            0x09
@@ -43,6 +46,7 @@
 #define LPS331AP_25_HZ      0x7
 
 // Pressure resolution
+#define LPS331AP_160_NOISE    0x73 // (at ODR 1Hz, current draw is 5.5uA)
 #define LPS331AP_020_NOISE    0x7A // Not compatible with 25Hz sample rate
 #define LPS331AP_025_NOISE    0x79
 #define LPS331AP_25_HZ_NOISE  0x6A // Recommended precision for 25Hz
@@ -54,8 +58,8 @@ typedef union lps331ap_ctrl_reg1
   uint8_t value;
   struct {
     unsigned spi_interface: 1;
-    unsigned bdu:           1;
     unsigned delta_en:      1;
+    unsigned bdu:           1;
     unsigned int_en:        1;
     unsigned odr:           3;
     unsigned active:        1;
@@ -63,7 +67,7 @@ typedef union lps331ap_ctrl_reg1
 } lps331ap_ctrl_reg1_t;
 
 // Sample at 12.5 Hz
-static lps331ap_ctrl_reg1_t lps331ap_ctrl_reg1_default = {.value = 0xE2};
+static lps331ap_ctrl_reg1_t lps331ap_ctrl_reg1_default = {.value = 0x86}; // 0xE2 defalt// 0x96 1hz
 
 // ctrl_reg2
 typedef union lps331ap_ctrl_reg2
@@ -78,8 +82,8 @@ typedef union lps331ap_ctrl_reg2
   } f;
 } lps331ap_ctrl_reg2_t;
 
-static lps331ap_ctrl_reg2_t lps331ap_ctrl_reg2_default = {.value = 0x00};
-static lps331ap_ctrl_reg2_t lps331ap_ctrl_reg2_reset = {.value = 0x82};
+static lps331ap_ctrl_reg2_t lps331ap_ctrl_reg2_default = {.value = 0x00}; // 0x00
+static lps331ap_ctrl_reg2_t lps331ap_ctrl_reg2_reset = {.value = 0x84}; // 0x82
 
 // ctrl_reg3
 typedef union lps331ap_ctrl_reg3
@@ -93,7 +97,7 @@ typedef union lps331ap_ctrl_reg3
   } f;
 } lps331ap_ctrl_reg3_t;
 
-static lps331ap_ctrl_reg3_t lps331ap_ctrl_reg3_default = {.value = 0x04};
+static lps331ap_ctrl_reg3_t lps331ap_ctrl_reg3_default = {.value = 0x00}; // 0x04
 
 // res_cfg
 typedef union lps332ap_res_cfg
@@ -101,12 +105,14 @@ typedef union lps332ap_res_cfg
   uint8_t value;
 } lps331ap_res_cfg_t;
 
-static lps331ap_res_cfg_t lps332ap_res_cfg_default = {.value = LPS331AP_020_NOISE};
+static lps331ap_res_cfg_t lps332ap_res_cfg_default = {.value = 0x73}; // 020_NOISE
 
 void lps331ap_init();
 int lps331ap_read(uint8_t address, uint16_t len, uint8_t * buf);
 int lps331ap_write(uint8_t address, uint16_t len, uint8_t * buf);
 uint32_t lps331ap_get_pressure();
+void lps331ap_power_up(void);
+void lps331ap_power_down(void);
 
 
 #endif /*LPS331AP_H*/

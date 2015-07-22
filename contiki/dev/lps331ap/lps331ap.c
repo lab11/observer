@@ -16,6 +16,7 @@ lps331ap_init()
   SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
 
   lps331ap_write(LPS331AP_CTRL_REG2, 1, &lps331ap_ctrl_reg2_reset.value);
+  //lps331ap_write(LPS331AP_CTRL_REG2, 1, &(0x84));
 
   while(1)
   {
@@ -26,9 +27,15 @@ lps331ap_init()
   }
 
   lps331ap_write(LPS331AP_CTRL_REG2, 1, &lps331ap_ctrl_reg2_default.value);
+
   lps331ap_write(LPS331AP_CTRL_REG1, 1, &lps331ap_ctrl_reg1_default.value);
+  //lps331ap_write(LPS331AP_CTRL_REG1, 1, &(0x96));
+
   lps331ap_write(LPS331AP_CTRL_REG3, 1, &lps331ap_ctrl_reg3_default.value);
+  //lps331ap_write(LPS331AP_CTRL_REG3, 1, &(0x00));
+
   lps331ap_write(LPS331AP_RES_CONF, 1, &lps332ap_res_cfg_default.value);
+  //lps331ap_write(LPS331AP_RES_CONF, 1, &(0x73));
 }
 
 int
@@ -79,6 +86,20 @@ lps331ap_write(uint8_t address, uint16_t len, uint8_t * buf)
   return 0;
 }
 
+int lps331ap_write_noinc(uint8_t address, uint8_t * buf) {
+  spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+  SPI_CS_CLR(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
+
+  SPI_WRITE(address);
+
+  SPI_WRITE(*buf);
+
+  SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
+
+  return 0;
+
+}
+
 uint32_t
 lps331ap_get_pressure()
 {
@@ -89,6 +110,57 @@ lps331ap_get_pressure()
   
   if (LPS331AP_DBG) printf("lps331ap: read %d\n", val/4096);
   return val;
+}
+
+uint32_t
+lps331ap_one_shot(void) 
+{
+  uint8_t reg2_one_shot = 0x01;
+  //uint8_t temp;
+  //uint8_t buf[3];
+  uint32_t val;
+  //lps331ap_read(LPS331AP_CTRL_REG1, 1, &temp);
+  //lps331ap_write_noinc(LPS331AP_CTRL_REG2, &reg2_one_shot);
+  lps331ap_write_noinc(LPS331AP_CTRL_REG2, &reg2_one_shot);
+
+  while(1)
+  {
+    uint8_t status_reg;
+    lps331ap_read(LPS331AP_STATUS_REG, 1, &status_reg);
+    if(status_reg & 0x02) { // data ready
+      break;
+    }
+  }
+
+  val = lps331ap_get_pressure(); // will clear status reg when MSB is read
+
+  return val;
+}
+
+void
+lps331ap_power_up(void)
+{
+  uint8_t buf;
+  lps331ap_read(LPS331AP_CTRL_REG1, 1, &buf);
+
+  buf |= LPS331AP_POWER_UP_MASK;
+
+  lps331ap_write(LPS331AP_CTRL_REG1, 1, &buf);
+
+  return;
+}
+
+void 
+lps331ap_power_down(void) 
+{
+  uint8_t buf;
+  lps331ap_read(LPS331AP_CTRL_REG1, 1, &buf);
+
+  buf &= LPS331AP_POWER_DOWN_MASK;
+
+  lps331ap_write(LPS331AP_CTRL_REG1, 1, &buf);
+
+  return;
 }
 
 // void interrupt_en()
