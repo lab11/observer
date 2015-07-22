@@ -1,4 +1,4 @@
-
+#include "cpu.h"
 #include "contiki.h"
 #include "lps331ap.h"
 #include "si1147.h"
@@ -22,57 +22,43 @@
 #include "cc2538-rf.h"
 #include "net/packetbuf.h"
 #include "sys/rtimer.h"
-//#include "vtimer-arch.h"
+#include "vtimer.h"
 
-//static struct etimer periodic_timer_red;
-//static struct etimer periodic_timer_green;
-//static struct etimer periodic_timer_blue;
+
+#define PERIOD_T 30*RTIMER_SECOND
+#define PERIOD_T2 45*RTIMER_SECOND
+
+// prototypes
+void setup_before_resume(void);
+void cleanup_before_sleep(void);
+//static void periodic_rtimer(struct rtimer *rt, void* ptr);
+static void periodic_rtimer(void);
+
+typedef enum WakeEvents { 
+			DEFAULTEV, 
+			PERIODIC_EV,
+			ACCEL_EV, 
+			MOTION_EV 
+} wakeevents_t;
+
+static wakeevents_t wakeevent = DEFAULTEV;
+
+
 static uint8_t counter = 0;
 static struct rtimer my_timer;
 static struct rtimer my_timer2;
+static struct vtimer my_vtimer;
 
 volatile uint8_t rtimer_expired = 0;
 volatile uint8_t accel_event = 0;
 volatile uint8_t motion_event = 0;
 
 
-#define assert_wfi() do { asm("wfi"::); } while(0)
 
 
-void setup_before_resume(void);
-void cleanup_before_sleep(void);
-static void periodic_rtimer(struct rtimer *rt, void* ptr);
 
-#define PERIOD_T 30*RTIMER_SECOND
-#define PERIOD_T2 45*RTIMER_SECOND
+/*---------------------------------------------------------------------------*/
 
-
-/*---------------------------------------------------------------------------------*/
-/*
-You can change it using if/OR clauses to regulate the period... 
-this is just an example
-*/
-// static char periodic_rtimer(struct rtimer *rt, void* ptr){
-//      uint8_t ret;
-
-//      //leds_go(counter++);   //u gonna get the led counting from 0-7 
-//      printf("time now: %d\n", RTIMER_NOW());
-//      printf("timer plus period: %d\n", RTIMER_NOW() + PERIOD_T);
-
-//      //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, (void*)periodic_rtimer, NULL);
-//      process_poll(&observer_lp_process);
-//      //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, 
-//      //           (void (*)(struct rtimer *, void *))periodic_rtimer, NULL);
-//      //if(ret){
-//      //    printf("Error Timer: %u\n", ret);
-//      //}
-//    return 1;
-// }
-
-static char periodic_rtimer2(struct rtimer *rt, void* ptr) {
-	 printf("time now2: %d\n", RTIMER_NOW());
-     printf("timer plus period2: %d\n", RTIMER_NOW() + PERIOD_T2);
-}
 
 
 /*---------------------------------------------------------------------------*/
@@ -97,46 +83,6 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 	/*uint32_t ui32Val;
 
-	// Set the clocking to run from external crystal/oscillator
-	SysCtrlClockSet(false, false, SYS_CTRL_CLOCK_CTRL_SYS_DIV_32MHZ);
-
-	// Set the IO to the same as system clock
-	SysCtrlIOClockSet(SYS_CTRL_CLOCK_CTRL_IO_DIV_32MHZ);
-
-	// Display the setup on the console
-	printf("Sleepmode timer\n");
-
-	// Disable UART0(and any other peripherals in deep sleep)
-	SysCtrlPeripheralDeepSleepDisable(0x00000200); // 0x00000200 = SYS_CTRL_PERIPH_UART0
-	SysCtrlPeripheralDeepSleepDisable(0x00000201); // 0x00000201 = SYS_CTRL_PERIPH_UART1
-
-	// Let system enter powermode 2 when going to deep sleep
-	SysCtrlPowerModeSet(SYS_CTRL_PMCTL_PM2); // 0x00000002 = SYS_CTRL_PMCTL_PM2
-
-	// Enable the sleep timer wakeup
-	GPIOIntWakeupEnable(0x00000020); // 0x00000020 = GPIO_IWE_SM_TIMER
-
-	// ENable sleep mode interrupt
-	//IntEnable(INT_SMTIM); // 161 = INT_SMTIM (SMTimer)
-	nvic_interrupt_enable(NVIC_INT_SM_TIMER); // same as above
-
-	int i = 0;
-	while(i++ < 15000 ) {
-		asm("");
-	}
-	// Set timer to 10000  above current value
-	ui32Val = SleepModeTimerCountGet();
-	SleepModeTimerCompareSet(ui32Val + 1000000);
-
-	// Display the timer value on the console
-	printf("Timer val = %d\n", ui32Val);
-
-	// Go to sleep
-	SysCtrlDeepSleep();
-
-	// Display the timer value on the console
-	ui32Val = SleepModeTimerCountGet();
-	printf("Timter val = %d (after wakeup)\n", ui32Val);
 
 	//etimer_set(&periodic_timer_red, CLOCK_SECOND);
 	//etimer_set(&periodic_timer_green, CLOCK_SECOND/2);
@@ -157,35 +103,37 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 	//cc2538_rf_driver.off();
 	//NETSTACK_RADIO.off();
-	//select_16_mhz_rcosc();
-	//REG(SCB_SYSCTRL) |= SCB_SYSCTRL_SLEEPDEEP;
-	//REG(SYS_CTRL_PMCTL) = SYS_CTRL_PMCTL_PM2;
-	//assert_wfi();
+
+	amn41122_init();
+	//amn41122_irq_enable();
+
 	lps331ap_init();
 
 	mpu9250_init();
 
 	mpu9250_motion_interrupt_init(0x0F, 0x06);
 
+	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
+	si1147_als_data_t als_data;
+	//adc121c021_config();
+
 	//CC2538_RF_CSP_ISRFOFF();
+	cc2538_rf_driver.off();
 
 	cleanup_before_sleep();
 	//cc2538_rf_driver.off();
-	ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, &periodic_rtimer, NULL);
+
+	my_vtimer = get_vtimer(periodic_rtimer);
+	schedule_vtimer(&my_vtimer, 30*VTIMER_SECOND);
+	//ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, &periodic_rtimer, NULL);
 
 	//uint8_t press = 0;
 	while(1) {
 		//leds_toggle(LEDS_GREEN);
-		//static struct etimer et;
-		// etimer_set(&et, 5*CLOCK_SECOND);
+
 		//cc2538_rf_driver.off();
 		// CC2538_RF_CSP_ISRFOFF();
-		//spix_disable(0);
-		//REG(SYS_CTRL_SCGCSSI) &= ~(1);
-		//REG(SYS_CTRL_DCGCSSI) &= ~(1);
-		//spix_disable(1);
-		//REG(SSI0_BASE + SSI_CR1) = 0;
-		//REG(SYS_CTRL_SRSSI) |= 1;
+
 		// ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, 
   //               (void*)periodic_rtimer, NULL);
 		// if(ret){
@@ -194,15 +142,6 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
   //               (void*)periodic_rtimer, NULL);
   //    	}
 
-		/**** test ***/
-		//printf("SET RTIMER1\n");
-		// ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, (void*)periodic_rtimer, NULL);
-		//printf("SET_RTIMER2\n");
-		//ret2 = rtimer_set(&my_timer2, RTIMER_NOW() + PERIOD_T2, 1 , (void*)periodic_rtimer2, NULL);
-
-		//printf("ret1: %d, ret2: %d\n", ret, ret2);
-
-		//lps331ap_power_down();
 
 		// cleanup_before_sleep();
 		//printf("GOING TO SLEEP\n");
@@ -214,32 +153,63 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		//printf("UNDER YIELD\n");
 
 		/* check who woke me up */
-		if (rtimer_expired) {
-			rtimer_expired = 0;
-		} else if (accel_event) {
-			accel_event = 0;
+		/*switch (wakeevent) {
+			case PERIODIC_EV:
+					//
+					break;
+			case ACCEL_EV:
+					//
+					break;
+			case ACCEL_INT_REENABLE:
+					//
+					break;
+			case MOTION_EV:
+					//
+					break;
+			case DEFAULTEV:
+			default:
+					// blink red led? idk something to indicate error
+					break;
 
-		} else if (motion_event) {
-			motion_event = 0;
-		}
+		}*/
 
 		uint32_t press = lps331ap_one_shot();// lps331ap_one_shot();
-		//printf("PRESS: %d\n", press);
-		packetbuf_copyfrom(buf, 6);
-		cc2538_on_and_transmit();
+		// printf("PRESS: %d\n", press);
+		uint16_t temp = si7021_readTemp(TEMP_NOHOLD);
+		uint16_t rh = si7021_readHumd(RH_NOHOLD);
+		si1147_als_force_read(&als_data);
+		// printf("LIGHT: %d\n", als_data.vis.val);
+		adc121c021_read_amplitude();
+
+		leds_toggle(LEDS_GREEN);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		leds_toggle(LEDS_GREEN);
+	
+		//packetbuf_copyfrom(buf, 6);
+		//cc2538_on_and_transmit();
 		//cc2538_rf_driver.on();
 		//cc2538_rf_driver.send(buf, 6);
-		//cc2538_rf_driver.off();
+		// cc2538_rf_driver.off();
 		//if (cc2538_on_and_transmit() != 0) {
 		//	leds_toggle(LEDS_RED);
 		//}
 		//else {
 		//	leds_toggle(LEDS_GREEN);
 		//}
-		CC2538_RF_CSP_ISRFOFF();
+		//CC2538_RF_CSP_ISRFOFF();
 
 
-		ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, &periodic_rtimer, NULL);
+		//ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, &periodic_rtimer, NULL);
+		schedule_vtimer(&my_vtimer, 30*VTIMER_SECOND);
 		//if (ret) {
 		//	printf("rtimer set error\n");
 		//}
@@ -277,6 +247,7 @@ void setup_before_resume(void) {
 	GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM),
                   			GPIO_PIN_MASK(0));
 
+	i2c_master_enable();
 	/* ic2 ports/pins */
 	// GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(5));
  //  	GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(4));
@@ -304,13 +275,14 @@ void cleanup_before_sleep(void) {
 	GPIO_SET_OUTPUT(GPIO_B_BASE, 0x01);
 	GPIO_CLR_PIN(GPIO_B_BASE, 0x01);
 
+	i2c_master_disable();
 	/* i2c ports/pins that need to be set/clr so not floating */
 	// GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(5));
 	// GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(4));
 	// GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(5));
-	// GPIO_CLR_PIN(GPIO_C_BASE, GPIO_PIN_MASK(5));
+	// GPIO_SET_PIN(GPIO_C_BASE, GPIO_PIN_MASK(5));
 	// GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(4));
-	// GPIO_CLR_PIN(GPIO_C_BASE,GPIO_PIN_MASK(4));
+	// GPIO_SET_PIN(GPIO_C_BASE,GPIO_PIN_MASK(4));
 
 	/* mpu9250 cs port/pin that need to be set/clr so not floating and not enabling ic */
 	//GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM),
@@ -327,7 +299,8 @@ void cleanup_before_sleep(void) {
 }
 
 
-static void periodic_rtimer(struct rtimer *rt, void* ptr){
+//static void periodic_rtimer(struct rtimer *rt, void* ptr){
+static void periodic_rtimer() {
 	INTERRUPTS_DISABLE();
 	rtimer_expired = 1;
 
