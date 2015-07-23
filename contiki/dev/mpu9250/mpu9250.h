@@ -144,6 +144,8 @@ void mpu9250_init();
 
 uint8_t mpu9250_readByte(uint8_t reg_addr);
 
+void mpu9250_writeByte(uint8_t reg_addr, uint8_t data);
+
 // writes data to register reg_addr
 void mpu9250_writeSensor(uint8_t reg_addr, uint8_t data);
 
@@ -161,10 +163,13 @@ int16_t mpu9250_readSensor(uint8_t reg_addrL, uint8_t reg_addrH);
 *							LSB = 4mg, Range 0mg to 1024mg
 *	\param Wakeup_Frequency	8 bit value Sets the frequency of waking up the chip
 *							to take a sample of accel data at the low power accel 
-*							Output Data Rate
+*							Output Data Rate; greater freq = higher power draw
+*	\param callback 		a callback function of type gpio_callback_t to be registered
+*							with the isr
 */
-void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency);
+void mpu9250_motion_nterrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency);
 
-void accel_irq_handler(uint8_t port, uint8_t pin);
+void temp_irq_handler(uint8_t port, uint8_t pin);
+//void accel_irq_handler(uint8_t port, uint8_t pin);
 
 #endif /*MPU9250_H*/

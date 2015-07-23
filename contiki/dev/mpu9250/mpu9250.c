@@ -9,10 +9,12 @@
 #include "usb-serial.h"
 #include "mpu9250.h"
 #include "amn41122.h"
+#include "cpu.h"
 
 static struct timer mpu9250_startup_timer;
 static struct timer accel_int_timer;
 extern const struct process observer_main_process;
+extern void setup_before_resume();
 
 void mpu9250_init() {
 	spix_cs_init(MPU9250_CS_PORT, MPU9250_CS_PIN);
@@ -22,11 +24,13 @@ void mpu9250_init() {
   mpu9250_writeSensor(MPU9250_PWR_MGMT_1, 0x80); //80
   
   // disable mpu9250 i2c
-  mpu9250_writeSensor(MPU9250_USER_CTRL, 0x10);
+  //mpu9250_writeSensor(MPU9250_USER_CTRL, 0x10);
 
   timer_set(&mpu9250_startup_timer, MPU9250_STARTUP_TIME);
   WAIT_WHILE(!timer_expired(&mpu9250_startup_timer));
-	
+
+  mpu9250_writeSensor(MPU9250_USER_CTRL, 0x10);
+
   // ACCEL CONFIG
 	mpu9250_writeSensor(MPU9250_ACCEL_CONFIG, 0x18);
 
@@ -48,8 +52,20 @@ uint8_t mpu9250_readByte(uint8_t reg_addr) {
 	return data;
 }
 
+void mpu9250_writeByte(uint8_t reg_addr, uint8_t data) {
+	reg_addr &= MPU9250_WRITE_MASK;
+
+	spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+
+	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+	SPI_WRITE(reg_addr);
+  	SPI_FLUSH();
+	SPI_WRITE(data);
+	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);	
+}
+
 void mpu9250_writeSensor(uint8_t reg_addr, uint8_t data) {
-	
+
 	spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 
 	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
@@ -92,7 +108,8 @@ void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequen
 
 	// Enable Motion Interrupt
 	uint8_t INT_ENABLE_reg = mpu9250_readByte(MPU9250_INT_ENABLE); // 0xB8
-	INT_ENABLE_reg &= 0x80;
+	INT_ENABLE_reg &= 0xA6; // 0b10100110
+	//INT_ENABLE_reg &= 0x80;
 	INT_ENABLE_reg |= 0x40;
 	mpu9250_writeSensor(MPU9250_INT_ENABLE, INT_ENABLE_reg); // 0x38
 
@@ -116,24 +133,27 @@ void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequen
 	// Enable Cycle Mode (Accel Low Power Mode)
 	uint8_t PWR_MGMT_1_reg = mpu9250_readByte(MPU9250_PWR_MGMT_1); // 0xEB
 	PWR_MGMT_1_reg |= 0x20;
-	mpu9250_writeSensor(MPU9250_LP_ACCEL_ODR, PWR_MGMT_1_reg); // 0x6B
+	mpu9250_writeSensor(MPU9250_PWR_MGMT_1, PWR_MGMT_1_reg); // 0x6B
 
-	uint8_t INT_PIN_CFG_reg = mpu9250_readByte(MPU9250_INT_PIN_CFG);
-	INT_PIN_CFG_reg |= 0x20; // interrupt latch enable
-	mpu9250_writeSensor(MPU9250_INT_PIN_CFG, INT_PIN_CFG_reg);
+	//uint8_t INT_PIN_CFG_reg = mpu9250_readByte(MPU9250_INT_PIN_CFG);
+	//INT_PIN_CFG_reg |= 0x20; // interrupt latch enable
+	//mpu9250_writeSensor(MPU9250_INT_PIN_CFG, INT_PIN_CFG_reg);
 
-	timer_set(&accel_int_timer, 0.1*CLOCK_SECOND);
+	//timer_set(&accel_int_timer, 0.1*CLOCK_SECOND);
 
 	// Enable GPIO Pin as Interrupt
 	GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
   	GPIO_SET_INPUT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
-  	GPIO_DETECT_EDGE(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
-  	GPIO_TRIGGER_SINGLE_EDGE(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
-  	GPIO_DETECT_RISING(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
-  	GPIO_ENABLE_INTERRUPT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
+  	// GPIO_DETECT_EDGE(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
+  	// GPIO_TRIGGER_SINGLE_EDGE(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
+  	// GPIO_DETECT_RISING(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
+  	// GPIO_ENABLE_INTERRUPT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
+  	GPIO_POWER_UP_ON_RISING(MPU9250_INT_PORT, GPIO_PIN_MASK(MPU9250_INT_PIN));
+	GPIO_ENABLE_POWER_UP_INTERRUPT(MPU9250_INT_PORT, GPIO_PIN_MASK(MPU9250_INT_PIN));
   	ioc_set_over(MPU9250_INT_PORT, MPU9250_INT_PIN, IOC_OVERRIDE_DIS);
   	nvic_interrupt_enable(MPU9250_INT_VECTOR);
-  	gpio_register_callback(accel_irq_handler, MPU9250_INT_PORT, MPU9250_INT_PIN);
+  	gpio_register_callback(temp_irq_handler, MPU9250_INT_PORT, MPU9250_INT_PIN);
+  	//gpio_register_callback(accel_irq_handler, MPU9250_INT_PORT, MPU9250_INT_PIN);
 
 
 
@@ -141,12 +161,20 @@ void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequen
 
 }
 
+void temp_irq_handler(uint8_t port, uint8_t pin) {
+	INTERRUPTS_DISABLE();
+	//setup_before_resume();
+	printf("HALLO");
+	//mpu9250_readByte(MPU9250_INT_STATUS);
+	INTERRUPTS_ENABLE();
+}
 
+/*
 void accel_irq_handler(uint8_t port, uint8_t pin) {
 
  	if (timer_expired(&accel_int_timer)) {
- 		asm("CPSID i");
- 		
+ 		//asm("CPSID i");
+ 		INTERRUPTS_DISABLE();
  		//GPIO_DISABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
 		//GPIO_DISABLE_INTERRUPT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
  		timer_restart(&accel_int_timer);
@@ -173,7 +201,8 @@ void accel_irq_handler(uint8_t port, uint8_t pin) {
 
 		//timer_reset(&accel_int_timer);
 	} else {
-		asm("CPSID i");
+		//asm("CPSID i");
+		INTERRUPTS_DISABLE();
 		//GPIO_DISABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
 		//GPIO_DISABLE_INTERRUPT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
 		printf("ACCEL INT WAIT\n");
@@ -189,8 +218,8 @@ void accel_irq_handler(uint8_t port, uint8_t pin) {
 
 		//GPIO_ENABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
 		//GPIO_ENABLE_INTERRUPT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
-		asm("CPSIE i");
-
+		//asm("CPSIE i");
+		INTERRUPTS_ENABLE();
 	}
 
-}
+}*/
