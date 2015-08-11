@@ -40,7 +40,7 @@ typedef uint32_t rtimer_clock_t;
 #define RTIMER_CLOCK_LT(a,b)     ((int32_t)((a)-(b)) < 0)
 
 /* Enable external 32 kHz crystal */
-#define SYS_CTRL_CONF_OSC32K_USE_XTAL 0
+#define SYS_CTRL_CONF_OSC32K_USE_XTAL 1
 
 /** @} */
 /*---------------------------------------------------------------------------*/
@@ -83,8 +83,12 @@ typedef uint32_t rtimer_clock_t;
  * @{
  */
 #ifndef WATCHDOG_CONF_ENABLE
-#define WATCHDOG_CONF_ENABLE	1 /**<Disable the watchdog timer */
+#define WATCHDOG_CONF_ENABLE	1 /**<Enable the watchdog timer */
 #endif
+#ifndef WATCHDOG_ATUM_BYPASS
+#define WATCHDOG_ATUM_BYPASS	0 /* Default: Watchdog automatically controlled and reset within core atum code */
+#endif
+#define WATCHDOG_ATUM_ENABLE (WATCHDOG_CONF_ENABLE && !WATCHDOG_ATUM_BYPASS)
 /** @} */
 /*---------------------------------------------------------------------------*/
 /**
@@ -137,6 +141,10 @@ typedef uint32_t rtimer_clock_t;
  *
  * @{
  */
+#ifndef SPI_CONF_DEFAULT_INSTANCE
+#define SPI_CONF_DEFAULT_INSTANCE   0
+#endif
+
 #ifndef UART_CONF_ENABLE
 #define UART_CONF_ENABLE            1 /**< Enable/Disable UART I/O */
 #endif
@@ -304,11 +312,11 @@ typedef uint32_t rtimer_clock_t;
 #endif /* NETSTACK_CONF_NETWORK */
 
 #ifndef NETSTACK_CONF_MAC
-#define NETSTACK_CONF_MAC     nullmac_driver// csma_driver
+#define NETSTACK_CONF_MAC     nullmac_driver//csma_driver
 #endif
 
 #ifndef NETSTACK_CONF_RDC
-#define NETSTACK_CONF_RDC     nullrdc_driver // contikimac_driver
+#define NETSTACK_CONF_RDC     nullrdc_driver//contikimac_driver
 #endif
 
 /* Configure NullRDC for when it's selected */
@@ -398,7 +406,7 @@ typedef uint32_t rtimer_clock_t;
 #endif
 
 #ifndef CC2538_RF_CONF_CHANNEL
-#define CC2538_RF_CONF_CHANNEL              22
+#define CC2538_RF_CONF_CHANNEL              24
 #endif /* CC2538_RF_CONF_CHANNEL */
 
 #ifndef CC2538_RF_CONF_AUTOACK
