@@ -2,14 +2,16 @@
 #define RV3049_H_
 
 // Addresses for the RTC registers
-#define RV3049_PAGE_ADDR_CONTROL     0x00
-#define RV3049_PAGE_ADDR_CLOCK       0x08
-#define RV3049_PAGE_ADDR_ALARM       0x10
-#define RV3049_PAGE_ADDR_TIMER       0x18
-#define RV3049_PAGE_ADDR_TEMP        0x20
-#define RV3049_PAGE_ADDR_EEPROM_USER 0x28
-#define RV3049_PAGE_ADDR_EEPROM_CTRL 0x30
-#define RV3049_PAGE_ADDR_RAM         0x38
+#define RV3049_PAGE_ADDR_CONTROL            0x00
+#define RV3049_PAGE_ADDR_ALARM_INT_CONTROL  0x01
+#define RV3049_PAGE_ADDR_ALARM_INT_FLAG     0x02
+#define RV3049_PAGE_ADDR_CLOCK              0x08
+#define RV3049_PAGE_ADDR_ALARM              0x10
+#define RV3049_PAGE_ADDR_TIMER              0x18
+#define RV3049_PAGE_ADDR_TEMP               0x20
+#define RV3049_PAGE_ADDR_EEPROM_USER        0x28
+#define RV3049_PAGE_ADDR_EEPROM_CTRL        0x30
+#define RV3049_PAGE_ADDR_RAM                0x38
 
 #define RV3049_READ_LEN_TIME 7
 
@@ -17,6 +19,9 @@
 
 #define RV3049_SET_READ_BIT(command) (0x80 | command)
 #define RV3049_SET_WRITE_BIT(command) (0x7F & command)
+
+#define RV3049_SET_ALARM_ENABLE_BIT(command) (0x80 | command)
+#define RV3049_SET_ALARM_DISABLE_BIT(command) (0x7F & command)
 
 #define BCD_TO_BINARY(v) ((v & 0x0F) + (((v & 0x10)>>4)*10) + (((v & 0x20)>>5)*20) + (((v & 0x40)>>6)*40))
 
@@ -57,6 +62,16 @@ typedef struct {
 
 void rv3049_init();
 int rv3049_read_time(rv3049_time_t* time);
+int rv3049_read_alarm(rv3049_time_t* time);
 int rv3049_set_time(rv3049_time_t* time);
+
+
+void rv3049_clear_int_flag();
+int rv3049_set_alarm(rv3049_time_t* time, uint8_t ae_mask);
+int rv3049_disable_alarm(void);
+
+void rv3049_interrupt_enable();
+
+uint8_t roundUp(uint8_t n);
 
 #endif

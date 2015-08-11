@@ -6,6 +6,7 @@
 #include "si7021.h"
 #include "amn41122.h"
 #include "adc121c021.h"
+#include "rv3049.h"
 #include "sys/etimer.h"
 #include "dev/leds.h"
 #include "lpm.h"
@@ -45,19 +46,15 @@ static wakeevents_t wakeevent = DEFAULTEV;
 
 
 static uint8_t counter = 0;
-static struct rtimer my_timer;
-static struct rtimer my_timer2;
-static struct vtimer my_vtimer;
+//static struct rtimer my_timer;
+//static struct rtimer my_timer2;
+//static struct vtimer my_vtimer;
+//static struct timer mytime;
+static struct vtimer pir_vtimer;
 
 volatile uint8_t rtimer_expired = 0;
 volatile uint8_t accel_event = 0;
 volatile uint8_t motion_event = 0;
-
-
-
-
-
-/*---------------------------------------------------------------------------*/
 
 
 
@@ -69,42 +66,95 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 	PROCESS_BEGIN();
 
+	leds_toggle(LEDS_GREEN);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	leds_toggle(LEDS_GREEN);
+	leds_toggle(LEDS_GREEN);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	leds_toggle(LEDS_GREEN);
+
+	leds_toggle(LEDS_GREEN);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	leds_toggle(LEDS_GREEN);
+	leds_toggle(LEDS_GREEN);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	leds_toggle(LEDS_GREEN);
+
+	leds_toggle(LEDS_GREEN);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	leds_toggle(LEDS_GREEN);
+	leds_toggle(LEDS_GREEN);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	clock_delay_usec(50000);
+	leds_toggle(LEDS_GREEN);
+
+
 	uint8_t ret;
 	uint8_t ret2;
 
 	//cc2538_rf_driver.off();
-	//periodic_rtimer(&my_timer, NULL);
-	// ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, 
-                // (void*)periodic_rtimer, NULL);
-	//if(ret){
-    //     printf("Error Timer: %u\n", ret);
-    //}
-	//lpm_enter();
 
-	/*uint32_t ui32Val;
-
-
-	//etimer_set(&periodic_timer_red, CLOCK_SECOND);
-	//etimer_set(&periodic_timer_green, CLOCK_SECOND/2);
-	//etimer_set(&periodic_timer_blue, CLOCK_SECOND/4);
-
-	printf("HELLO WORLD\n");
-	*/
-	//GPIO_SET_INPUT(GPIO_PORT_TO_BASE(RV3049_INT_N_PORT_NUM),
-    //             GPIO_PIN_MASK(RV3049_INT_N_PIN));
-	static struct etimer et;
-	static uint8_t buf[7];
-	buf[0] = 1;
-	buf[1] = 2;
-	buf[2] = 3;
-	buf[3] = 4;
-	buf[4] = 5;
-	buf[5] = 6;
+	//static struct etimer et;
+	static uint8_t buf[10];
+	//uint8_t buff[1];
 
 	//cc2538_rf_driver.off();
 	//NETSTACK_RADIO.off();
 
-	amn41122_init();
+	//amn41122_init();
 	//amn41122_irq_enable();
 
 	lps331ap_init();
@@ -113,18 +163,80 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 	mpu9250_motion_interrupt_init(0x0F, 0x06);
 
-	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
+	//si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 	si1147_als_data_t als_data;
 	//adc121c021_config();
 
+
+//*******************************************************************
+
+	//rv3049_time_t times;
+
+	rv3049_time_t alarm_time;
+	rv3049_read_time(&alarm_time);
+	// uint8_t minutes;
+
+	// minutes = roundUp(alarm_time.minutes);
+	// (minutes == 60) ? (alarm_time.minutes = 0): (alarm_time.minutes = minutes);
+
+
+
+	// 	SPI_CS_SET(RV3049_CS_PORT_NUM, RV3049_CS_PIN);
+
+	//     SPI_WRITE(RV3049_SET_READ_BIT(RV3049_PAGE_ADDR_ALARM_INT_FLAG));
+
+	//     SPI_FLUSH();
+
+	//     // null byte read
+	//     SPI_READ(buff[0]);
+
+	//     // Then actually read the alarm interrupt control reg
+	//     SPI_READ(buff[0]);
+
+	//     SPI_FLUSH();
+
+	//     SPI_CS_CLR(RV3049_CS_PORT_NUM, RV3049_CS_PIN);
+
+  
+	//     SPI_CS_SET(RV3049_CS_PORT_NUM, RV3049_CS_PIN);
+
+	//     SPI_WRITE(RV3049_SET_WRITE_BIT(RV3049_PAGE_ADDR_ALARM_INT_FLAG));
+
+	//     SPI_WRITE(buff[0] & 0xFE);
+
+ //        SPI_CS_CLR(RV3049_CS_PORT_NUM, RV3049_CS_PIN);
+
+
+
+
+
+	alarm_time.seconds = 0;
+	uint8_t ae_mask = 0x01;
+	rv3049_set_alarm(&alarm_time, ae_mask);
+	rv3049_clear_int_flag();
+	clock_delay_usec(50000);
+	rv3049_interrupt_enable();
+	//rv3049_set_alarm(&alarm_time, ae_mask);
+
+
+
+
+
+
+//*********************************************************************
+
 	//CC2538_RF_CSP_ISRFOFF();
+	NETSTACK_RDC.off(0);
 	cc2538_rf_driver.off();
 
 	cleanup_before_sleep();
 	//cc2538_rf_driver.off();
 
-	my_vtimer = get_vtimer(periodic_rtimer);
-	schedule_vtimer(&my_vtimer, 30*VTIMER_SECOND);
+
+
+
+	//my_vtimer = get_vtimer(periodic_rtimer);
+	//schedule_vtimer(&my_vtimer, 30*VTIMER_SECOND);
 	//ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, &periodic_rtimer, NULL);
 
 	//uint8_t press = 0;
@@ -148,7 +260,11 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		// PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 		//printf("YIELDING\n");
 		PROCESS_YIELD();
+		//INTERRUPTS_DISABLE();
 		setup_before_resume();
+		
+
+		rv3049_clear_int_flag();
 
 		//printf("UNDER YIELD\n");
 
@@ -172,16 +288,79 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 					break;
 
 		}*/
+		//rv3049_read_time(&times);
+		//printf("TIME: %u/%u/%u, %u:%u:%u\n", times.month, times.days, times.year, times.hours, times.minutes, times.seconds);
 
 		uint32_t press = lps331ap_one_shot();// lps331ap_one_shot();
 		// printf("PRESS: %d\n", press);
-		uint16_t temp = si7021_readTemp(TEMP_NOHOLD);
-		uint16_t rh = si7021_readHumd(RH_NOHOLD);
-		si1147_als_force_read(&als_data);
+		//uint16_t temp = si7021_readTemp(TEMP_NOHOLD);
+		//uint16_t rh = si7021_readHumd(RH_NOHOLD);
+		//si1147_als_force_read(&als_data);
 		// printf("LIGHT: %d\n", als_data.vis.val);
-		adc121c021_read_amplitude();
+		//adc121c021_read_amplitude();
+		// buf[0] = temp;
+		// buf[1] = (temp & 0xFF00) >> 8;
+		// buf[2] = rh;
+		// buf[3] = (rh & 0xFF00) >> 8;
+		// buf[4] = als_data.vis.b.lo;
+		// buf[5] = als_data.vis.b.hi;
+		// buf[6] = press & 0x000000FF;
+		// buf[7] = (press & 0x0000FF00) >> 8;
+		// buf[8] = (press & 0x00FF0000) >> 16;
+		// buf[9] = 0x01;
+		// buf[0] = 0x01;
+		// buf[1] = 0x02;
+		// buf[2] = 0x03;
+		// buf[3] = 0x04;
+		// buf[4] = 0x04;
+		// buf[5] = 0x06;
+		// buf[6] = 0x07;
+		// buf[7] = 0x08;
+		// buf[8] = 0x09;
+		// buf[9] = 0x01;
+
+
+		/*leds_toggle(LEDS_GREEN);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		leds_toggle(LEDS_GREEN);*/
+	
+		//packetbuf_copyfrom(buf, 10);
+		//cc2538_on_and_transmit();
+
+		/*leds_toggle(LEDS_RED);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		leds_toggle(LEDS_RED);*/
+
+		//NETSTACK_RDC.off(0);
+		//cc2538_rf_driver.off();
+		clock_delay_usec(50000);
+
+		//volatile uint8_t i = 0;
+		/*timer_set(&mytime, 5*CLOCK_SECOND);
+		while ( !(timer_expired(&mytime)) ) {
+			asm("");
+		}*/
 
 		leds_toggle(LEDS_GREEN);
+		/*clock_delay_usec(50000);
 		clock_delay_usec(50000);
 		clock_delay_usec(50000);
 		clock_delay_usec(50000);
@@ -190,13 +369,9 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		clock_delay_usec(50000);
 		clock_delay_usec(50000);
 		clock_delay_usec(50000);
-		clock_delay_usec(50000);
-		clock_delay_usec(50000);
-		leds_toggle(LEDS_GREEN);
-	
-		//packetbuf_copyfrom(buf, 6);
-		//cc2538_on_and_transmit();
-		//cc2538_rf_driver.on();
+		clock_delay_usec(50000);*/
+		//leds_toggle(LEDS_GREEN);
+
 		//cc2538_rf_driver.send(buf, 6);
 		// cc2538_rf_driver.off();
 		//if (cc2538_on_and_transmit() != 0) {
@@ -209,12 +384,14 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 
 		//ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, &periodic_rtimer, NULL);
-		schedule_vtimer(&my_vtimer, 30*VTIMER_SECOND);
+		//schedule_vtimer(&my_vtimer, 30*VTIMER_SECOND);
 		//if (ret) {
 		//	printf("rtimer set error\n");
 		//}
-
+	
 		cleanup_before_sleep();
+
+		INTERRUPTS_ENABLE();
 		// setup_before_resume();
 
 		//printf("PRESS: %d\n", lps331ap_one_shot());
@@ -239,6 +416,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 }
 
 void setup_before_resume(void) {
+	spix_enable(0);
 	/* ssi0 ports/pins */
 	GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM),
                   			GPIO_PIN_MASK(6));
@@ -264,6 +442,7 @@ void setup_before_resume(void) {
 }
 
 void cleanup_before_sleep(void) {
+	spix_disable(0);
 	/* ssi0 ports/pins that need to be set/clr so not floating */
 	GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(6));
 	GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(7));
@@ -311,6 +490,8 @@ static void periodic_rtimer() {
      printf("timer plus period: %d\n", RTIMER_NOW() + PERIOD_T);
 
      //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, (void*)periodic_rtimer, NULL);
+		//schedule_vtimer(&my_vtimer, 30*VTIMER_SECOND);
+     
      process_poll(&observer_lp_process);
      //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, 
      //           (void (*)(struct rtimer *, void *))periodic_rtimer, NULL);
@@ -320,6 +501,8 @@ static void periodic_rtimer() {
      INTERRUPTS_ENABLE();
    return;
 }
+
+
 
 
 

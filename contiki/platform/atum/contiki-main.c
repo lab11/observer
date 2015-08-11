@@ -34,8 +34,13 @@
 #include "ieee-addr.h"
 #include "lpm.h"
 #include "spi.h"
+#include "i2c.h"
 #include "fm25l04b.h"
 #include "rv3049.h"
+
+#if VTIMER_ENABLE
+#include "vtimer.h"
+#endif
 
 #include <stdint.h>
 #include <string.h>
@@ -83,6 +88,27 @@ set_rf_params(void)
     NETSTACK_RADIO.set_value(RADIO_PARAM_CHANNEL, CC2538_RF_CHANNEL);
     NETSTACK_RADIO.set_object(RADIO_PARAM_64BIT_ADDR, ext_addr, 8);
 }
+
+/*---------------------------------------------------------------------------*/
+/**
+ *
+ */
+static void disable_all_ioc_override() {
+  uint8_t portnum = 0;
+  uint8_t pinnum = 0;
+  for(portnum = 0; portnum < 4; portnum++) {
+      for(pinnum = 0; pinnum < 8; pinnum++) {
+        if ((portnum == 3) && (pinnum & LEDS_ALL)) {
+            // do nuthin
+        }
+
+        else {
+          ioc_set_over(portnum, pinnum, IOC_OVERRIDE_DIS);
+        }
+      }
+  }
+}
+
 /*---------------------------------------------------------------------------*/
 /**
  * \brief Main routine for the cc2538dk platform
@@ -97,7 +123,91 @@ main(void)
   clock_init();
   lpm_init();
   rtimer_init();
+  #if VTIMER_ENABLE
+  vtimer_init();
+  #endif
   gpio_init();
+  #if UART_CONF_ENABLE
+  GPIO_SET_OUTPUT(GPIO_A_BASE, 0xFC);
+  GPIO_CLR_PIN(GPIO_A_BASE, 0xFC);
+  #else
+  GPIO_SET_OUTPUT(GPIO_A_BASE, 0xFF);
+  GPIO_CLR_PIN(GPIO_A_BASE, 0xFF);
+  #endif
+  
+  GPIO_SET_OUTPUT(GPIO_B_BASE, 0x80); // 0b1110 0000 //noperiphs, just spi = 0b11111000 // 0xA0 includes opamp gate // 80 includes pir
+  GPIO_CLR_PIN(GPIO_B_BASE, 0x80);
+  GPIO_SET_OUTPUT(GPIO_C_BASE, 0x09); // 0b0011 1101 //noperiphs, just spi = 0b00111111 // 0x0D spi and i2c
+  GPIO_CLR_PIN(GPIO_C_BASE, 0x09);
+  GPIO_SET_OUTPUT(GPIO_D_BASE, 0x00);
+  GPIO_CLR_PIN(GPIO_D_BASE, 0x00);
+  //GPIO_SET_OUTPUT(GPIO_D_BASE, 0xFF);
+  //GPIO_CLR_PIN(GPIO_D_BASE, 0xFF);
+
+  //disable_all_ioc_override();
+  //ioc_set_over(GPIO_A_NUM, 6, IOC_OVERRIDE_PUE);
+  // set high to test for the P-MOSFET for power gating the opamp (PORT A, PIN 6)
+  //GPIO_SET_PIN(GPIO_A_BASE, 0x40);
+  //GPIO_SET_PIN(GPIO_D_BASE, 0x07);
+
+  /*GPIO_SET_OUTPUT(GPIO_A_BASE, 0xFF);
+  GPIO_CLR_PIN(GPIO_A_BASE, 0xFF);*/
+
+  #if UART_CONF_ENABLE
+  //ioc_set_over(GPIO_A_NUM, 0, IOC_OVERRIDE_DIS);
+  //ioc_set_over(GPIO_A_NUM, 1, IOC_OVERRIDE_DIS);
+  #else
+  ioc_set_over(GPIO_A_NUM, 0, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_A_NUM, 1, IOC_OVERRIDE_DIS);
+  #endif
+  ioc_set_over(GPIO_A_NUM, 2, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_A_NUM, 3, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_A_NUM, 4, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_A_NUM, 5, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_A_NUM, 6, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_A_NUM, 7, IOC_OVERRIDE_DIS);
+
+  // ioc_set_over(GPIO_B_NUM, 3, IOC_OVERRIDE_DIS);
+  // ioc_set_over(GPIO_B_NUM, 4, IOC_OVERRIDE_DIS);
+  //ioc_set_over(GPIO_B_NUM, 5, IOC_OVERRIDE_DIS); // pir int
+  //ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS); // opamp gate
+  ioc_set_over(GPIO_B_NUM, 7, IOC_OVERRIDE_DIS);
+
+  ioc_set_over(GPIO_C_NUM, 0, IOC_OVERRIDE_DIS);
+  // ioc_set_over(GPIO_C_NUM, 1, IOC_OVERRIDE_DIS); // pressure cs
+  //ioc_set_over(GPIO_C_NUM, 2, IOC_OVERRIDE_DIS);
+    GPIO_SET_INPUT(GPIO_C_NUM, 0x04);
+    ioc_set_over(GPIO_C_NUM, 2, IOC_OVERRIDE_PUE);
+  ioc_set_over(GPIO_C_NUM, 3, IOC_OVERRIDE_DIS);
+  //ioc_set_over(GPIO_C_NUM, 4, IOC_OVERRIDE_DIS); // i2c scl
+  //ioc_set_over(GPIO_C_NUM, 5, IOC_OVERRIDE_DIS); // i2c sda
+
+  // lps331ap
+  GPIO_SET_OUTPUT(GPIO_C_BASE, 0x02);
+  GPIO_SET_PIN(GPIO_C_BASE, 0x02);
+  ioc_set_over(GPIO_C_NUM, 1, IOC_OVERRIDE_DIS);
+
+  // mpu9250
+  GPIO_SET_OUTPUT(GPIO_B_BASE, 0x08);
+  GPIO_SET_PIN(GPIO_B_BASE, 0x08);
+  ioc_set_over(GPIO_B_NUM, 3, IOC_OVERRIDE_DIS);
+
+  // opamp gate
+  GPIO_SET_OUTPUT(GPIO_B_BASE, 0x40);
+  GPIO_SET_PIN(GPIO_B_BASE, 0x40);
+  ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
+
+
+  /*GPIO_SET_OUTPUT(GPIO_B_BASE, 0xF9);
+  GPIO_CLR_PIN(GPIO_B_BASE, 0xF9);
+  ioc_set_over(GPIO_B_NUM, 0, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_B_NUM, 3, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_B_NUM, 4, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_B_NUM, 5, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
+  ioc_set_over(GPIO_B_NUM, 7, IOC_OVERRIDE_DIS);*/
+
+
 
   leds_init();
 
@@ -106,8 +216,38 @@ main(void)
   watchdog_init();
   //button_sensor_init();
   spi_init();
+  // GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM),
+  //                         GPIO_PIN_MASK(6));
+  // GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM),
+  //                         GPIO_PIN_MASK(7));
+  // GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM),
+  //                         GPIO_PIN_MASK(0));
+
   fm25l04b_init();
   rv3049_init();
+
+  //REG(SYS_CTRL_SRSSI) |= 1;
+  // disable ssi gpios after theyre used before going to sleep
+  // GPIO_SET_OUTPUT(GPIO_C_BASE, 0xC0);
+  // GPIO_CLR_PIN(GPIO_C_BASE, 0xC0);
+  // GPIO_SET_OUTPUT(GPIO_B_BASE, 0x01);
+ //  GPIO_CLR_PIN(GPIO_B_BASE, 0x01);
+
+  i2c_init(GPIO_C_NUM, 5, // SDA
+           GPIO_C_NUM, 4, // SCL
+           I2C_SCL_FAST_BUS_SPEED);
+
+  // i2c_master_disable();
+  // REG(SYS_CTRL_RCGCI2C) &= ~(1); /* Run mode */
+  // REG(SYS_CTRL_SRI2C) |= 1;
+  // GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(5));
+  // GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(4));
+
+  // GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(5));
+  // GPIO_CLR_PIN(GPIO_C_BASE, GPIO_PIN_MASK(5));
+  // GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(4));
+  // GPIO_CLR_PIN(GPIO_C_BASE,GPIO_PIN_MASK(4));
+
 
   /*
    * Character I/O Initialization.

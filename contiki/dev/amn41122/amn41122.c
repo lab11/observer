@@ -5,6 +5,7 @@
 #include "ioc.h"
 #include "amn41122.h"
 #include "mpu9250.h"
+#include "cpu.h"
 
 #include <stdio.h>
 
@@ -41,31 +42,37 @@ uint8_t amn41122_read() {
 }
 
 
-void amn41122_irq_enable() {
-  timer_set(&amn41122_int_timer, 10*CLOCK_SECOND);
+void amn41122_irq_enable(gpio_callback_t callback) {
+  gpio_register_callback(callback, AMN41122_OUT_PORT, AMN41122_OUT_PIN);
 
-  //nvic_init();
-  //GPIO_SOFTWARE_CONTROL(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
-  GPIO_PERIPHERAL_CONTROL(AMN41122_OUT_BASE, AMN41122_OUT_PIN);
+  GPIO_SOFTWARE_CONTROL(AMN41122_OUT_BASE, AMN41122_OUT_PIN);
   GPIO_SET_INPUT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
   GPIO_DETECT_EDGE(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
   GPIO_TRIGGER_SINGLE_EDGE(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
   GPIO_DETECT_RISING(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
   GPIO_ENABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
   ioc_set_over(AMN41122_OUT_PORT, AMN41122_OUT_PIN, IOC_OVERRIDE_PDE);
-  //ioc_set_over(AMN41122_OUT_PORT, AMN41122_OUT_PIN, IOC_OVERRIDE_DIS);
 
   nvic_interrupt_enable(AMN41122_OUT_VECTOR);
-  gpio_register_callback(amn41122_irq_handler, AMN41122_OUT_PORT, AMN41122_OUT_PIN);
+ 
 }
 
 void amn41122_irq_handler(uint8_t port, uint8_t pin) {
+  INTERRUPTS_DISABLE();
+  //setup_before_resume();
+  printf("PIR");
+  //mpu9250_readByte(MPU9250_INT_STATUS);
+  INTERRUPTS_ENABLE();
+}
+
+/*void amn41122_irq_handler(uint8_t port, uint8_t pin) {
     if (AMN41122_DBG) printf("amn41122: motion detected\n");
 
     if (timer_expired(&amn41122_int_timer)) {
 
         printf("BEFORE DISABLE MOTION INTERRUPT\n");
-        asm("CPSID i");
+        //asm("CPSID i");
+        INTERRUPTS_DISABLE();
 
         //GPIO_DISABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
         //GPIO_DISABLE_INTERRUPT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
@@ -94,7 +101,8 @@ void amn41122_irq_handler(uint8_t port, uint8_t pin) {
         //timer_reset(&amn41122_int_timer);
 
     } else {
-        asm("CPSID i");
+        //asm("CPSID i");
+        INTERRUPTS_DISABLE();
         //GPIO_DISABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
         //GPIO_DISABLE_INTERRUPT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
 
@@ -112,9 +120,10 @@ void amn41122_irq_handler(uint8_t port, uint8_t pin) {
         //GPIO_ENABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
         //GPIO_ENABLE_INTERRUPT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
 
-        asm("CPSIE i");
+        //asm("CPSIE i");
+        INTERRUPTS_ENABLE();
 
     }
 
 
-}
+}*/

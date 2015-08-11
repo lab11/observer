@@ -16,11 +16,11 @@ uint16_t adc121c021_read_amplitude() {
   int16_t max = 0;
   uint16_t count = 0;
   int16_t temp = 0;
-  for(count = 0; count < 100; ++count){
+  for(count = 0; count < 10; ++count){
     temp = adc121c021_read_reg16(ADC121C021_CONV_RESULT);
-    temp &= 0x0FFF;
-    temp -= 0xA00;
-    temp = abs(temp);
+    //temp &= 0x0FFF;
+    //temp -= 0xA00;
+    //temp = abs(temp);
     if (max < temp) max = temp;
   }
 

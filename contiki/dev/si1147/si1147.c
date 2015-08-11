@@ -101,8 +101,9 @@ void si1147_init(uint16_t meas_rate, uint8_t meas_enable) {
   if(SI1147_DBG) printf("si1147_init\n");
   
   // startup time for SI1147 is 25 ms
-  timer_set(&si1147_startup_timer, SI1147_STARTUP_TIME);
-  WAIT_WHILE(!timer_expired(&si1147_startup_timer));
+  // timer_set(&si1147_startup_timer, SI1147_STARTUP_TIME);
+  // WAIT_WHILE(!timer_expired(&si1147_startup_timer));
+  clock_delay_usec(25000);
  
   // after initialization, moves to standby mode
   // host must write 0x17 to HW_KEY for proper operation
@@ -114,21 +115,21 @@ void si1147_init(uint16_t meas_rate, uint8_t meas_enable) {
   // must be written before any measurement is forced or auto
   si1147_write_param(SI1147_PARAM_CHLIST, meas_enable);
 
-	// set up ALS vs PS settings
-	if ((meas_enable | SI1147_ALS_ENABLE) == meas_enable) {
-		// this seems to help differentiate between normal and zero light
-		si1147_write_param(SI1147_PARAM_ALS_VIS_ADC_GAIN, 0x3);
-	}
+	// // set up ALS vs PS settings
+	// if ((meas_enable | SI1147_ALS_ENABLE) == meas_enable) {
+	// 	// this seems to help differentiate between normal and zero light
+	// 	si1147_write_param(SI1147_PARAM_ALS_VIS_ADC_GAIN, 0x3);
+	// }
 
-  // set auto mode
-  if (meas_rate > 0) {
-    if (meas_enable == SI1147_ALS_ENABLE)
-      si1147_write_command(SI1147_COMMAND_ALS_AUTO);
-    else if (meas_enable == SI1147_PS_ENABLE)
-      si1147_write_command(SI1147_COMMAND_PS_AUTO);
-    else if (meas_enable == SI1147_PSALS_ENABLE)
-      si1147_write_command(SI1147_COMMAND_PSALS_AUTO);
-  }
+ //  // set auto mode
+ //  if (meas_rate > 0) {
+ //    if (meas_enable == SI1147_ALS_ENABLE)
+ //      si1147_write_command(SI1147_COMMAND_ALS_AUTO);
+ //    else if (meas_enable == SI1147_PS_ENABLE)
+ //      si1147_write_command(SI1147_COMMAND_PS_AUTO);
+ //    else if (meas_enable == SI1147_PSALS_ENABLE)
+ //      si1147_write_command(SI1147_COMMAND_PSALS_AUTO);
+ //  }
 
   return;
 }
@@ -138,7 +139,8 @@ void si1147_als_read(si1147_als_data_t *data) {
   data->vis.b.lo = si1147_read_reg(SI1147_ALS_VIS_DATA0);
   data->vis.b.hi = si1147_read_reg(SI1147_ALS_VIS_DATA1);
   data->ir.b.lo = si1147_read_reg(SI1147_ALS_IR_DATA0);
-  data->ir.b.hi = si1147_read_reg(SI1147_ALS_IR_DATA1); data->aux.b.lo = si1147_read_reg(SI1147_AUX_DATA0);
+  data->ir.b.hi = si1147_read_reg(SI1147_ALS_IR_DATA1); 
+  data->aux.b.lo = si1147_read_reg(SI1147_AUX_DATA0);
   data->aux.b.hi = si1147_read_reg(SI1147_AUX_DATA1);
   
   if (SI1147_DBG_ALS) {

@@ -40,7 +40,7 @@ typedef uint32_t rtimer_clock_t;
 #define RTIMER_CLOCK_LT(a,b)     ((int32_t)((a)-(b)) < 0)
 
 /* Enable external 32 kHz crystal */
-#define SYS_CTRL_CONF_OSC32K_USE_XTAL 1
+#define SYS_CTRL_CONF_OSC32K_USE_XTAL 0
 
 /** @} */
 /*---------------------------------------------------------------------------*/
@@ -304,11 +304,11 @@ typedef uint32_t rtimer_clock_t;
 #endif /* NETSTACK_CONF_NETWORK */
 
 #ifndef NETSTACK_CONF_MAC
-#define NETSTACK_CONF_MAC     csma_driver
+#define NETSTACK_CONF_MAC     nullmac_driver// csma_driver
 #endif
 
 #ifndef NETSTACK_CONF_RDC
-#define NETSTACK_CONF_RDC     contikimac_driver
+#define NETSTACK_CONF_RDC     nullrdc_driver // contikimac_driver
 #endif
 
 /* Configure NullRDC for when it's selected */
@@ -345,7 +345,7 @@ typedef uint32_t rtimer_clock_t;
  * 0 for PM0, 1 for PM1 and 2 for PM2
  */
 #ifndef LPM_CONF_MAX_PM
-#define LPM_CONF_MAX_PM       1
+#define LPM_CONF_MAX_PM       2
 #endif
 
 #ifndef LPM_CONF_STATS
@@ -398,7 +398,7 @@ typedef uint32_t rtimer_clock_t;
 #endif
 
 #ifndef CC2538_RF_CONF_CHANNEL
-#define CC2538_RF_CONF_CHANNEL              24
+#define CC2538_RF_CONF_CHANNEL              22
 #endif /* CC2538_RF_CONF_CHANNEL */
 
 #ifndef CC2538_RF_CONF_AUTOACK
