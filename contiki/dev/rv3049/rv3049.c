@@ -101,6 +101,8 @@ rv3049_read_time(rv3049_time_t* time)
   time->month   = buf[5];
   time->year    = BCD_TO_BINARY(buf[6])+2000;
 
+  printf("time: %u %u %u %u:%u:%u\n", time->month, time->days, time->year, time->hours, time->minutes, time->seconds);
+
   return 0;
 }
 

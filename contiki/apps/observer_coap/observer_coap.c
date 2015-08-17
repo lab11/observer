@@ -60,9 +60,17 @@
   } \
   strpos += tmplen
 
+typedef enum IntEvents { 
+      DEFAULT,
+      PIR
+} int_events_t;
+
+int_events_t int_event = DEFAULT;
+
 static uint32_t MOTION_THRESHOLD = 60;
 
 struct etimer my_etimer;
+struct etimer pir_etimer;
 static time_t last_pir_time;
 
 void pir_callback(uint8_t port, uint8_t pin);
@@ -102,6 +110,26 @@ coap_parse_bool (void* request)
   } else {
     return -1;
   }
+}
+
+int
+coap_parse_int (void* request) 
+{
+  int length;
+  const char* payload = NULL;
+
+  length = REST.get_request_payload(request, (const uint8_t**) &payload);
+  if (length > 0) {
+    if (atoi(payload) != 0) {
+      return atoi(payload);
+    } else {
+      return -1;
+    }
+
+  } else {
+    return -1;
+  }
+
 }
 
 
@@ -547,23 +575,29 @@ sensor_motion_get_handler(void *request,
                   int32_t *offset) {
   
   int length;
-  char buf[100];
+  // char buf[100];
   char* output;
-  struct tm timedate;
-  time_t cur_time_epoch;
-  rv3049_time_t current_time;
+  // struct tm timedate;
+  // time_t cur_time_epoch;
+  // rv3049_time_t current_time;
 
-  rv3049_read_time(&current_time);
+  // rv3049_read_time(&current_time);
 
-  sprintf(buf, "%u %u %u %u:%u:%u", current_time.days, current_time.month, current_time.year, current_time.hours, current_time.minutes, current_time.seconds);
-  strptime(buf, "%d %m %Y %H:%M:%S", &timedate);
-  timedate.tm_isdst = -1;
-  cur_time_epoch = mktime(&timedate);
+  // sprintf(buf, "%u %u %u %u:%u:%u", current_time.days, current_time.month, current_time.year, current_time.hours, current_time.minutes, current_time.seconds);
+  // strptime(buf, "%d %m %Y %H:%M:%S", &timedate);
+  // timedate.tm_isdst = -1;
+  // cur_time_epoch = mktime(&timedate);
 
-  printf("buf: %s\n", buf);
-  printf("cur:%u, last:%u\n", (long)cur_time_epoch, (long)last_pir_time);
+  // printf("buf: %s\n", buf);
+  // printf("cur:%u, last:%u\n", (long)cur_time_epoch, (long)last_pir_time);
 
-  if ( ((long)cur_time_epoch - (long)last_pir_time) > MOTION_THRESHOLD ) {
+  // if ( ((long)cur_time_epoch - (long)last_pir_time) > MOTION_THRESHOLD ) {
+  //   output = "No motion within time window: ";
+  // } else {
+  //   output = "Motion within time window: ";
+  // }
+
+  if (etimer_expired(&pir_etimer)) {
     output = "No motion within time window: ";
   } else {
     output = "Motion within time window: ";
@@ -577,11 +611,27 @@ sensor_motion_get_handler(void *request,
   return;
 }
 
+static void
+sensor_motion_post_handler(void *request,
+                  void *response,
+                  uint8_t *buffer,
+                  uint16_t preferred_size,
+                  int32_t *offset) {
+
+  uint32_t b = coap_parse_int(request);
+  if (b > 0) {
+    MOTION_THRESHOLD = b;
+    etimer_stop(&pir_etimer);
+  } else {
+    REST.set_response_status(response, REST.status.BAD_REQUEST);
+  }
+}
+
 RESOURCE(coap_sensor_motion,
          "title=\"sensor/Motion\";rt=\"hw\"",
          sensor_motion_get_handler,
-         NULL,
-         NULL,
+         sensor_motion_post_handler,
+         sensor_motion_post_handler,
          NULL);
 
 
@@ -601,7 +651,6 @@ PROCESS_THREAD(app, ev, data) {
   amn41122_init();
   amn41122_irq_enable(pir_callback);
   adc121c021_config();
-  
 
 
   leds_on(LEDS_ALL);
@@ -631,6 +680,27 @@ PROCESS_THREAD(app, ev, data) {
   while (1) {
     //etimer_set(&my_etimer, 5*CLOCK_SECOND);
     PROCESS_WAIT_EVENT();
+    // char buf[100];
+    // struct tm time_date;
+    // rv3049_time_t pir_time;
+    // switch(int_event) {
+    //   case PIR: 
+    //         rv3049_read_time(&pir_time);
+            
+    //         sprintf(buf, "%u %u %u %u:%u:%u", pir_time.days, pir_time.month, pir_time.year, pir_time.hours, pir_time.minutes, pir_time.seconds);
+            
+    //         //strptime(buf, "%d %m %Y %H:%M:%S", &time_date);
+            
+    //         time_date.tm_isdst = -1;
+
+    //         last_pir_time = mktime(&time_date);
+    //         GPIO_ENABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
+    //         break;
+    //   default:
+    //         break;
+
+    // }
+
     //sensor_temperature_trigger();
   }
 
@@ -640,20 +710,24 @@ PROCESS_THREAD(app, ev, data) {
 
 void pir_callback(uint8_t port, uint8_t pin) {
   INTERRUPTS_DISABLE();
+  GPIO_DISABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
+  GPIO_CLEAR_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
 
-  char buf[100];
-  struct tm time_date;
-  rv3049_time_t pir_time;
+  etimer_set(&pir_etimer, MOTION_THRESHOLD*CLOCK_SECOND);
+  // struct tm time_date;
+  // rv3049_time_t pir_time;
 
-  rv3049_read_time(&pir_time);
+  // rv3049_read_time(&pir_time);
   
-  sprintf(buf, "%u %u %u %u:%u:%u", pir_time.days, pir_time.month, pir_time.year, pir_time.hours, pir_time.minutes, pir_time.seconds);
+  // sprintf(buf, "%u %u %u %u:%u:%u", pir_time.days, pir_time.month, pir_time.year, pir_time.hours, pir_time.minutes, pir_time.seconds);
   
-  strptime(buf, "%d %m %Y %H:%M:%S", &time_date);
+  // strptime(buf, "%d %m %Y %H:%M:%S", &time_date);
   
-  time_date.tm_isdst = -1;
+  // time_date.tm_isdst = -1;
 
-  last_pir_time = mktime(&time_date);
+  // last_pir_time = mktime(&time_date);
+
+  GPIO_ENABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
 
   INTERRUPTS_ENABLE();
 

@@ -40,7 +40,7 @@
 
 #define UIP_CONF_LOGGING 0
 
-
+#define VTIMER_ENABLE 0
 
 #endif /* PROJECT_CONF_H_ */
 
