@@ -302,7 +302,7 @@ rv3049_disable_alarm()
 void
 rv3049_interrupt_enable() {
 // Enable GPIO Pin as Interrupt
-    gpio_register_callback(temp_handler, RV3049_INT_N_PORT_NUM, RV3049_INT_N_PIN);
+    //gpio_register_callback(temp_handler, RV3049_INT_N_PORT_NUM, RV3049_INT_N_PIN);
     GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(RV3049_INT_N_PORT_NUM), GPIO_PIN_MASK(RV3049_INT_N_PIN));
     GPIO_SET_INPUT(GPIO_PORT_TO_BASE(RV3049_INT_N_PORT_NUM), GPIO_PIN_MASK(RV3049_INT_N_PIN));
     //GPIO_DETECT_EDGE(GPIO_PORT_TO_BASE(RV3049_INT_N_PORT_NUM), GPIO_PIN_MASK(RV3049_INT_N_PIN));
@@ -313,7 +313,7 @@ rv3049_interrupt_enable() {
     GPIO_ENABLE_POWER_UP_INTERRUPT(RV3049_INT_N_PORT_NUM, GPIO_PIN_MASK(RV3049_INT_N_PIN));
     ioc_set_over(RV3049_INT_N_PORT_NUM, RV3049_INT_N_PIN, IOC_OVERRIDE_PUE);
     nvic_interrupt_enable(NVIC_INT_GPIO_PORT_B);
-    //gpio_register_callback(temp_irq_handler, RV3049_INT_N_PORT_NUM, RV3049_INT_N_PIN);
+    gpio_register_callback(temp_handler, RV3049_INT_N_PORT_NUM, RV3049_INT_N_PIN);
 }
 
 void temp_handler(uint8_t port, uint8_t pin) {

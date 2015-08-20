@@ -7,8 +7,9 @@
 
 // No need for UART
 #define STARTUP_CONF_VERBOSE 0
-#define UART_CONF_ENABLE 1
+#define UART_CONF_ENABLE 0
 #define SPI_CONF_DEFAULT_INSTANCE 0
+//#define NETSTACK_CONF_WITH_IPV6 0
 
  //#define CC2538_CONF_QUIET 0
 

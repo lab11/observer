@@ -435,28 +435,28 @@ typedef uint32_t rtimer_clock_t;
 
 /* TCP, UDP, ICMP */
 #ifndef UIP_CONF_TCP
-#define UIP_CONF_TCP                         1
+#define UIP_CONF_TCP                         0
 #endif
 #ifndef UIP_CONF_TCP_MSS
 #define UIP_CONF_TCP_MSS                    64
 #endif
-#define UIP_CONF_UDP                         1
-#define UIP_CONF_UDP_CHECKSUMS               1
-#define UIP_CONF_ICMP6                       1
+#define UIP_CONF_UDP                         0
+#define UIP_CONF_UDP_CHECKSUMS               0
+#define UIP_CONF_ICMP6                       0
 
 /* ND and Routing */
 #ifndef UIP_CONF_ROUTER
-#define UIP_CONF_ROUTER                      1
+#define UIP_CONF_ROUTER                      0
 #endif
 
 #ifndef UIP_CONF_IPV6_RPL
-#define UIP_CONF_IPV6_RPL                    1
+#define UIP_CONF_IPV6_RPL                    0
 #endif
 
 #define UIP_CONF_ND6_SEND_RA                 0
 #define UIP_CONF_IP_FORWARD                  0
 #define RPL_CONF_STATS                       0
-#define RPL_CONF_MAX_DAG_ENTRIES             1
+#define RPL_CONF_MAX_DAG_ENTRIES             0
 #ifndef RPL_CONF_OF
 #define RPL_CONF_OF rpl_mrhof
 #endif
@@ -487,12 +487,12 @@ typedef uint32_t rtimer_clock_t;
 #define SICSLOWPAN_CONF_COMPRESSION_THRESHOLD 63
 #endif
 #ifndef SICSLOWPAN_CONF_FRAG
-#define SICSLOWPAN_CONF_FRAG                 1
+#define SICSLOWPAN_CONF_FRAG                 0
 #endif
 #define SICSLOWPAN_CONF_MAXAGE               8
 
 /* Define our IPv6 prefixes/contexts here */
-#define SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS    1
+#define SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS    0
 #ifndef SICSLOWPAN_CONF_ADDR_CONTEXT_0
 #define SICSLOWPAN_CONF_ADDR_CONTEXT_0 { \
   addr_contexts[0].prefix[0] = 0xaa; \
@@ -508,7 +508,7 @@ typedef uint32_t rtimer_clock_t;
 /*---------------------------------------------------------------------------*/
 #else /* NETSTACK_CONF_WITH_IPV6 */
 /* Network setup for non-IPv6 (rime). */
-#define UIP_CONF_IP_FORWARD                  1
+#define UIP_CONF_IP_FORWARD                  0
 
 #ifndef UIP_CONF_BUFFER_SIZE
 #define UIP_CONF_BUFFER_SIZE               108

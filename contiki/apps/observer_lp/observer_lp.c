@@ -163,7 +163,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 	mpu9250_motion_interrupt_init(0x0F, 0x06);
 
-	//si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
+	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 	si1147_als_data_t als_data;
 	//adc121c021_config();
 
@@ -262,7 +262,8 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		PROCESS_YIELD();
 		//INTERRUPTS_DISABLE();
 		setup_before_resume();
-		
+
+		INTERRUPTS_DISABLE();
 
 		rv3049_clear_int_flag();
 
@@ -293,21 +294,21 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 		uint32_t press = lps331ap_one_shot();// lps331ap_one_shot();
 		// printf("PRESS: %d\n", press);
-		//uint16_t temp = si7021_readTemp(TEMP_NOHOLD);
-		//uint16_t rh = si7021_readHumd(RH_NOHOLD);
-		//si1147_als_force_read(&als_data);
+		uint16_t temp = si7021_readTemp(TEMP_NOHOLD);
+		uint16_t rh = si7021_readHumd(RH_NOHOLD);
+		si1147_als_force_read(&als_data);
 		// printf("LIGHT: %d\n", als_data.vis.val);
 		//adc121c021_read_amplitude();
-		// buf[0] = temp;
-		// buf[1] = (temp & 0xFF00) >> 8;
-		// buf[2] = rh;
-		// buf[3] = (rh & 0xFF00) >> 8;
-		// buf[4] = als_data.vis.b.lo;
-		// buf[5] = als_data.vis.b.hi;
-		// buf[6] = press & 0x000000FF;
-		// buf[7] = (press & 0x0000FF00) >> 8;
-		// buf[8] = (press & 0x00FF0000) >> 16;
-		// buf[9] = 0x01;
+		buf[0] = temp;
+		buf[1] = (temp & 0xFF00) >> 8;
+		buf[2] = rh;
+		buf[3] = (rh & 0xFF00) >> 8;
+		buf[4] = als_data.vis.b.lo;
+		buf[5] = als_data.vis.b.hi;
+		buf[6] = press & 0x000000FF;
+		buf[7] = (press & 0x0000FF00) >> 8;
+		buf[8] = (press & 0x00FF0000) >> 16;
+		buf[9] = 0x03;
 		// buf[0] = 0x01;
 		// buf[1] = 0x02;
 		// buf[2] = 0x03;
@@ -333,8 +334,8 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		clock_delay_usec(50000);
 		leds_toggle(LEDS_GREEN);*/
 	
-		//packetbuf_copyfrom(buf, 10);
-		//cc2538_on_and_transmit();
+		packetbuf_copyfrom(buf, 10);
+		cc2538_on_and_transmit();
 
 		/*leds_toggle(LEDS_RED);
 		clock_delay_usec(50000);
@@ -349,8 +350,8 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		clock_delay_usec(50000);
 		leds_toggle(LEDS_RED);*/
 
-		//NETSTACK_RDC.off(0);
-		//cc2538_rf_driver.off();
+		NETSTACK_RDC.off(0);
+		cc2538_rf_driver.off();
 		clock_delay_usec(50000);
 
 		//volatile uint8_t i = 0;
@@ -360,6 +361,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		}*/
 
 		leds_toggle(LEDS_GREEN);
+		INTERRUPTS_ENABLE();
 		/*clock_delay_usec(50000);
 		clock_delay_usec(50000);
 		clock_delay_usec(50000);
