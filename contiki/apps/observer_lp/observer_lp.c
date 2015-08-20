@@ -262,8 +262,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		PROCESS_YIELD();
 		//INTERRUPTS_DISABLE();
 		setup_before_resume();
-
-		INTERRUPTS_DISABLE();
+		
 
 		rv3049_clear_int_flag();
 
@@ -361,7 +360,6 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		}*/
 
 		leds_toggle(LEDS_GREEN);
-		INTERRUPTS_ENABLE();
 		/*clock_delay_usec(50000);
 		clock_delay_usec(50000);
 		clock_delay_usec(50000);

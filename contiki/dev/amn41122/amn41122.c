@@ -12,7 +12,7 @@
 static struct timer amn41122_startup_timer;
 static struct timer amn41122_int_timer;
 
-extern const struct process observer_main_process;
+extern const struct process observer_lp_process;
 
 
 void amn41122_init() {
@@ -43,26 +43,31 @@ uint8_t amn41122_read() {
 
 
 void amn41122_irq_enable(gpio_callback_t callback) {
-  gpio_register_callback(callback, AMN41122_OUT_PORT, AMN41122_OUT_PIN);
 
   GPIO_SOFTWARE_CONTROL(AMN41122_OUT_BASE, AMN41122_OUT_PIN);
   GPIO_SET_INPUT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
-  GPIO_DETECT_EDGE(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
-  GPIO_TRIGGER_SINGLE_EDGE(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
-  GPIO_DETECT_RISING(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
-  GPIO_ENABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
+  //GPIO_DETECT_EDGE(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
+  //GPIO_TRIGGER_SINGLE_EDGE(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
+  //GPIO_DETECT_RISING(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
+  //GPIO_ENABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
+  GPIO_POWER_UP_ON_RISING(RV3049_INT_N_PORT_NUM, GPIO_PIN_MASK(RV3049_INT_N_PIN));
+  GPIO_ENABLE_POWER_UP_INTERRUPT(RV3049_INT_N_PORT_NUM, GPIO_PIN_MASK(RV3049_INT_N_PIN));
   ioc_set_over(AMN41122_OUT_PORT, AMN41122_OUT_PIN, IOC_OVERRIDE_PDE);
 
   nvic_interrupt_enable(AMN41122_OUT_VECTOR);
+  gpio_register_callback(amn41122_irq_handler, AMN41122_OUT_PORT, AMN41122_OUT_PIN);
  
 }
 
 void amn41122_irq_handler(uint8_t port, uint8_t pin) {
   INTERRUPTS_DISABLE();
   //setup_before_resume();
-  printf("PIR");
+  //printf("PIR");
+  leds_toggle(LEDS_RED);
+  process_poll(&observer_lp_process);
+  GPIO_CLEAR_POWER_UP_INTERRUPT(RV3049_INT_N_PORT_NUM, GPIO_PIN_MASK(RV3049_INT_N_PIN));
   //mpu9250_readByte(MPU9250_INT_STATUS);
-  INTERRUPTS_ENABLE();
+
 }
 
 /*void amn41122_irq_handler(uint8_t port, uint8_t pin) {
