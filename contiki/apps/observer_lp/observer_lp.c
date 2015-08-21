@@ -153,9 +153,10 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 	//cc2538_rf_driver.off();
 	//NETSTACK_RADIO.off();
-
-	//amn41122_init();
+	pir_vtimer = get_vtimer(periodic_rtimer);
+	amn41122_init();
 	//amn41122_irq_enable();
+	//pir_vtimer = get_vtimer(periodic_rtimer);
 
 	lps331ap_init();
 
@@ -165,6 +166,8 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 	si1147_als_data_t als_data;
+
+	amn41122_irq_enable();
 	//adc121c021_config();
 
 
@@ -227,6 +230,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 	//CC2538_RF_CSP_ISRFOFF();
 	NETSTACK_RDC.off(0);
+	NETSTACK_MAC.off(0);
 	cc2538_rf_driver.off();
 
 	cleanup_before_sleep();
@@ -264,7 +268,14 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		setup_before_resume();
 		
 
-		rv3049_clear_int_flag();
+		//rv3049_clear_int_flag();
+		unsigned char leds_result = leds_get();
+		if (leds_result & LEDS_RED) {
+			schedule_vtimer(&pir_vtimer, 30*VTIMER_SECOND);
+			leds_off(LEDS_RED);
+		} else {
+			rv3049_clear_int_flag();
+		}
 
 		//printf("UNDER YIELD\n");
 
@@ -481,18 +492,21 @@ void cleanup_before_sleep(void) {
 //static void periodic_rtimer(struct rtimer *rt, void* ptr){
 static void periodic_rtimer() {
 	INTERRUPTS_DISABLE();
-	rtimer_expired = 1;
+	//rtimer_expired = 1;
 
-     uint8_t ret;
+	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+	GPIO_ENABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+	leds_off(LEDS_RED);
+     //uint8_t ret;
 
      //leds_go(counter++);   //u gonna get the led counting from 0-7 
-     printf("time now: %d\n", RTIMER_NOW());
-     printf("timer plus period: %d\n", RTIMER_NOW() + PERIOD_T);
+     //printf("time now: %d\n", RTIMER_NOW());
+     //printf("timer plus period: %d\n", RTIMER_NOW() + PERIOD_T);
 
      //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, (void*)periodic_rtimer, NULL);
 		//schedule_vtimer(&my_vtimer, 30*VTIMER_SECOND);
      
-     process_poll(&observer_lp_process);
+     //process_poll(&observer_lp_process);
      //ret = rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, 
      //           (void (*)(struct rtimer *, void *))periodic_rtimer, NULL);
      //if(ret){

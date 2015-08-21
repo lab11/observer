@@ -13,9 +13,9 @@
 
  //#define CC2538_CONF_QUIET 0
 
-#define ENERGEST_CONF_ON 1
+//#define ENERGEST_CONF_ON 1
 
-#define NO_CLOCK_DIVIDER_RESTORE 1
+//#define NO_CLOCK_DIVIDER_RESTORE 1
 
 #endif /* PROJECT_CONF_H_ */
 

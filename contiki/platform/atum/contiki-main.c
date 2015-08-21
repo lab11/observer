@@ -38,9 +38,9 @@
 #include "fm25l04b.h"
 #include "rv3049.h"
 
-#if VTIMER_ENABLE
+
 #include "vtimer.h"
-#endif
+
 
 #include <stdint.h>
 #include <string.h>
@@ -123,9 +123,7 @@ main(void)
   clock_init();
   lpm_init();
   rtimer_init();
-  #if VTIMER_ENABLE
   vtimer_init();
-  #endif
   gpio_init();
   #if UART_CONF_ENABLE
   GPIO_SET_OUTPUT(GPIO_A_BASE, 0xFC);
