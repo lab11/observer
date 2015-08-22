@@ -51,6 +51,7 @@ static uint8_t counter = 0;
 //static struct vtimer my_vtimer;
 //static struct timer mytime;
 static struct vtimer pir_vtimer;
+static uint8_t pir_motion = 0;
 
 volatile uint8_t rtimer_expired = 0;
 volatile uint8_t accel_event = 0;
@@ -148,7 +149,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 	//cc2538_rf_driver.off();
 
 	//static struct etimer et;
-	static uint8_t buf[10];
+	static uint8_t buf[11];
 	//uint8_t buff[1];
 
 	//cc2538_rf_driver.off();
@@ -273,6 +274,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		if (leds_result & LEDS_RED) {
 			schedule_vtimer(&pir_vtimer, 30*VTIMER_SECOND);
 			leds_off(LEDS_RED);
+			pir_motion = 1;
 		} else {
 			rv3049_clear_int_flag();
 		}
@@ -309,16 +311,18 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		si1147_als_force_read(&als_data);
 		// printf("LIGHT: %d\n", als_data.vis.val);
 		//adc121c021_read_amplitude();
-		buf[0] = temp;
-		buf[1] = (temp & 0xFF00) >> 8;
-		buf[2] = rh;
-		buf[3] = (rh & 0xFF00) >> 8;
-		buf[4] = als_data.vis.b.lo;
-		buf[5] = als_data.vis.b.hi;
-		buf[6] = press & 0x000000FF;
-		buf[7] = (press & 0x0000FF00) >> 8;
-		buf[8] = (press & 0x00FF0000) >> 16;
-		buf[9] = 0x03;
+		buf[0] = 0x02;
+		buf[1] = temp;
+		buf[2] = (temp & 0xFF00) >> 8;
+		buf[3] = rh;
+		buf[4] = (rh & 0xFF00) >> 8;
+		buf[5] = als_data.vis.b.lo;
+		buf[6] = als_data.vis.b.hi;
+		buf[7] = press & 0x000000FF;
+		buf[8] = (press & 0x0000FF00) >> 8;
+		buf[9] = (press & 0x00FF0000) >> 16;
+		buf[10] = pir_motion;
+		pir_motion = 0;
 		// buf[0] = 0x01;
 		// buf[1] = 0x02;
 		// buf[2] = 0x03;
@@ -344,7 +348,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		clock_delay_usec(50000);
 		leds_toggle(LEDS_GREEN);*/
 	
-		packetbuf_copyfrom(buf, 10);
+		packetbuf_copyfrom(buf, 11);
 		cc2538_on_and_transmit();
 
 		/*leds_toggle(LEDS_RED);
@@ -361,6 +365,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		leds_toggle(LEDS_RED);*/
 
 		NETSTACK_RDC.off(0);
+		NETSTACK_MAC.off(0);
 		cc2538_rf_driver.off();
 		clock_delay_usec(50000);
 
@@ -496,7 +501,7 @@ static void periodic_rtimer() {
 
 	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
 	GPIO_ENABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
-	leds_off(LEDS_RED);
+	//leds_off(LEDS_RED);
      //uint8_t ret;
 
      //leds_go(counter++);   //u gonna get the led counting from 0-7 
