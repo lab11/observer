@@ -34,6 +34,8 @@ void setup_before_resume(void);
 void cleanup_before_sleep(void);
 //static void periodic_rtimer(struct rtimer *rt, void* ptr);
 static void periodic_rtimer(void);
+static void rtc_callback(void);
+static void amn41122_callback(void);
 
 typedef enum WakeEvents { 
 			DEFAULTEV, 
@@ -168,7 +170,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 	si1147_als_data_t als_data;
 
-	amn41122_irq_enable();
+	amn41122_irq_enable(amn41122_callback);
 	//adc121c021_config();
 
 
@@ -219,7 +221,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 	rv3049_set_alarm(&alarm_time, ae_mask);
 	rv3049_clear_int_flag();
 	clock_delay_usec(50000);
-	rv3049_interrupt_enable();
+	rv3049_interrupt_enable(rtc_callback);
 	//rv3049_set_alarm(&alarm_time, ae_mask);
 
 
@@ -522,11 +524,20 @@ static void periodic_rtimer() {
 }
 
 
+static void rtc_callback() {
+	INTERRUPTS_DISABLE();
 
+	leds_toggle(LEDS_BLUE);
+	process_poll(&observer_lp_process);
 
+	return;
+}
 
+static void amn41122_callback() {
+	leds_on(LEDS_RED);
+ 	GPIO_DISABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+ 	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+  	process_poll(&observer_lp_process);
 
-void SleepModeIntHandler(void) {
-	printf("HELLOW\n");
 	return;
 }

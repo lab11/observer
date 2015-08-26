@@ -70,8 +70,8 @@ void rv3049_clear_int_flag();
 int rv3049_set_alarm(rv3049_time_t* time, uint8_t ae_mask);
 int rv3049_disable_alarm(void);
 
-void rv3049_interrupt_enable();
+void rv3049_interrupt_enable(gpio_callback_t callback);
 
-uint8_t roundUp(uint8_t n);
+uint8_t roundUp(uint8_t n, uint8_t amount);
 
 #endif

@@ -42,7 +42,7 @@ uint8_t amn41122_read() {
 }
 
 
-void amn41122_irq_enable() {
+void amn41122_irq_enable(gpio_callback_t callback) {
 
   GPIO_SOFTWARE_CONTROL(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
   GPIO_SET_INPUT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
@@ -55,7 +55,7 @@ void amn41122_irq_enable() {
   ioc_set_over(AMN41122_OUT_PORT, AMN41122_OUT_PIN, IOC_OVERRIDE_PDE);
 
   nvic_interrupt_enable(AMN41122_OUT_VECTOR);
-  gpio_register_callback(amn41122_irq_handler, AMN41122_OUT_PORT, AMN41122_OUT_PIN);
+  gpio_register_callback(callback, AMN41122_OUT_PORT, AMN41122_OUT_PIN);
  
 }
 

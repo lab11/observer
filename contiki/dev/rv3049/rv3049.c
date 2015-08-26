@@ -24,8 +24,8 @@ extern const struct process observer_lp_process;
 
 void temp_handler(uint8_t port, uint8_t pin);
 
-uint8_t roundUp(uint8_t n) {
-    return (n + 5) / 5 * 5;
+uint8_t roundUp(uint8_t n, uint8_t amount) {
+    return (n + amount) / amount * amount;
 }
 
 uint8_t rv3049_binary_to_bcd (uint8_t binary) {
@@ -300,7 +300,7 @@ rv3049_disable_alarm()
   return 0;
 }
 void
-rv3049_interrupt_enable() {
+rv3049_interrupt_enable(gpio_callback_t callback) {
 // Enable GPIO Pin as Interrupt
     //gpio_register_callback(temp_handler, RV3049_INT_N_PORT_NUM, RV3049_INT_N_PIN);
     GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(RV3049_INT_N_PORT_NUM), GPIO_PIN_MASK(RV3049_INT_N_PIN));
@@ -313,7 +313,7 @@ rv3049_interrupt_enable() {
     GPIO_ENABLE_POWER_UP_INTERRUPT(RV3049_INT_N_PORT_NUM, GPIO_PIN_MASK(RV3049_INT_N_PIN));
     ioc_set_over(RV3049_INT_N_PORT_NUM, RV3049_INT_N_PIN, IOC_OVERRIDE_PUE);
     nvic_interrupt_enable(NVIC_INT_GPIO_PORT_B);
-    gpio_register_callback(temp_handler, RV3049_INT_N_PORT_NUM, RV3049_INT_N_PIN);
+    gpio_register_callback(callback, RV3049_INT_N_PORT_NUM, RV3049_INT_N_PIN);
 }
 
 void temp_handler(uint8_t port, uint8_t pin) {
