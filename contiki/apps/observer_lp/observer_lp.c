@@ -33,7 +33,7 @@
 void setup_before_resume(void);
 void cleanup_before_sleep(void);
 //static void periodic_rtimer(struct rtimer *rt, void* ptr);
-static void periodic_rtimer(void);
+static void periodic_vtimer(void);
 static void rtc_callback(void);
 static void amn41122_callback(void);
 
@@ -156,7 +156,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 
 	//cc2538_rf_driver.off();
 	//NETSTACK_RADIO.off();
-	pir_vtimer = get_vtimer(periodic_rtimer);
+	pir_vtimer = get_vtimer(periodic_vtimer);
 	amn41122_init();
 	//amn41122_irq_enable();
 	//pir_vtimer = get_vtimer(periodic_rtimer);
@@ -272,11 +272,12 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		
 
 		//rv3049_clear_int_flag();
-		unsigned char leds_result = leds_get();
-		if (leds_result & LEDS_RED) {
+		//unsigned char leds_result = leds_get();
+		//if (leds_result & LEDS_RED) {
+		if (pir_motion) {
 			schedule_vtimer(&pir_vtimer, 30*VTIMER_SECOND);
-			leds_off(LEDS_RED);
-			pir_motion = 1;
+			//leds_off(LEDS_RED);
+		//	pir_motion = 1;
 		} else {
 			rv3049_clear_int_flag();
 		}
@@ -497,7 +498,7 @@ void cleanup_before_sleep(void) {
 
 
 //static void periodic_rtimer(struct rtimer *rt, void* ptr){
-static void periodic_rtimer() {
+static void periodic_vtimer() {
 	INTERRUPTS_DISABLE();
 	//rtimer_expired = 1;
 
@@ -534,7 +535,8 @@ static void rtc_callback() {
 }
 
 static void amn41122_callback() {
-	leds_on(LEDS_RED);
+	//leds_on(LEDS_RED);
+	pir_motion = 1;
  	GPIO_DISABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
  	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
   	process_poll(&observer_lp_process);
