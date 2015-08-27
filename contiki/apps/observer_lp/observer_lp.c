@@ -34,8 +34,8 @@ void setup_before_resume(void);
 void cleanup_before_sleep(void);
 //static void periodic_rtimer(struct rtimer *rt, void* ptr);
 static void periodic_vtimer(void);
-static void rtc_callback(void);
-static void amn41122_callback(void);
+void rtc_callback(void);
+void amn41122_callback(void);
 
 typedef enum WakeEvents { 
 			DEFAULTEV, 
@@ -525,7 +525,7 @@ static void periodic_vtimer() {
 }
 
 
-static void rtc_callback() {
+void rtc_callback() {
 	INTERRUPTS_DISABLE();
 
 	leds_toggle(LEDS_BLUE);
@@ -534,8 +534,10 @@ static void rtc_callback() {
 	return;
 }
 
-static void amn41122_callback() {
+void amn41122_callback() {
 	//leds_on(LEDS_RED);
+	INTERRUPTS_DISABLE();
+
 	pir_motion = 1;
  	GPIO_DISABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
  	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
