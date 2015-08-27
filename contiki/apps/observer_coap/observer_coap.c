@@ -36,7 +36,8 @@
 
 #define SW_VERSION "1.0"
 #define HW_VERSION "A"
-#define SAMPLE "sample"
+
+#define PIR_LED_PERIOD 3*RTIMER_SECOND
 
 #define ADD_CHAR_IF_POSSIBLE(char) \
   if(strpos >= *offset && bufpos < preferred_size) { \
@@ -69,11 +70,12 @@ int_events_t int_event = DEFAULT;
 
 static uint32_t MOTION_THRESHOLD = 60;
 
-struct etimer my_etimer;
 struct etimer pir_etimer;
+struct rtimer pirLED_rtimer;
 static time_t last_pir_time;
 
 void pir_callback(uint8_t port, uint8_t pin);
+void pirLED_callback(struct rtimer *rt, void* ptr);
 
 
 
@@ -653,7 +655,7 @@ PROCESS_THREAD(app, ev, data) {
   adc121c021_config();
 
 
-  leds_on(LEDS_ALL);
+  //leds_on(LEDS_ALL);
 
   // CoAP + REST
   rest_init_engine();
@@ -678,7 +680,6 @@ PROCESS_THREAD(app, ev, data) {
 
 
   while (1) {
-    //etimer_set(&my_etimer, 5*CLOCK_SECOND);
     PROCESS_WAIT_EVENT();
     // char buf[100];
     // struct tm time_date;
@@ -713,7 +714,12 @@ void pir_callback(uint8_t port, uint8_t pin) {
   GPIO_DISABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
   GPIO_CLEAR_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
 
+  leds_on(LEDS_RED);
+  rtimer_set(&pirLED_rtimer, RTIMER_NOW() + PIR_LED_PERIOD, 1, pirLED_callback, NULL);
+
   etimer_set(&pir_etimer, MOTION_THRESHOLD*CLOCK_SECOND);
+
+
   // struct tm time_date;
   // rv3049_time_t pir_time;
 
@@ -728,6 +734,16 @@ void pir_callback(uint8_t port, uint8_t pin) {
   // last_pir_time = mktime(&time_date);
 
   GPIO_ENABLE_INTERRUPT(AMN41122_OUT_BASE, AMN41122_OUT_PIN_MASK);
+
+  INTERRUPTS_ENABLE();
+
+  return;
+}
+
+void pirLED_callback(struct rtimer *rt, void* ptr) {
+  INTERRUPTS_DISABLE();
+
+  leds_off(LEDS_RED);
 
   INTERRUPTS_ENABLE();
 
