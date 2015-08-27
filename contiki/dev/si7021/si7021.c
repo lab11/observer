@@ -36,15 +36,24 @@ uint16_t si7021_readTemp(TEMP_READ_t read_type) {
     command = SI7021_READ_TEMP_FROM_PREV_HUMD;
   }
   
-  uint8_t transmit_bufBase[] = {command};
-  i2c_single_send(SI7021_SLAVE_ADDRESS, *transmit_bufBase);
-  uint8_t receive_bufBase[2];
-  while(i2c_burst_receive(SI7021_SLAVE_ADDRESS, receive_bufBase, 2) != I2C_MASTER_ERR_NONE);
-  uint8_t H = receive_bufBase[0];
-  uint8_t L = receive_bufBase[1];
+  uint8_t H, L, CS;
+  do {
+    uint8_t transmit_bufBase[] = {command};
+    i2c_single_send(SI7021_SLAVE_ADDRESS, *transmit_bufBase);
+    uint8_t receive_bufBase[3];
+    while(i2c_burst_receive(SI7021_SLAVE_ADDRESS, receive_bufBase, 3) != I2C_MASTER_ERR_NONE);
+    H = receive_bufBase[0];
+    L = receive_bufBase[1];
+    CS = receive_bufBase[2];
+  }
+  while (si7021_calculateCRC(H, L, CS) == 0);
+
   uint16_t temperature = (((H << 8) + L) * 175.72) / 65536 - 46.85;
 
+
   if (SI7021_DBG) printf("si7021:   temp %d\n", temperature);
+  //if (SI7021_DBG) printf("si7021: h: %x, l: %x\n", H, L);
+  //if (SI7021_DBG) printf("si7021: checksum %x\n", CS);
   return (H << 8) + L;
 }
 
@@ -58,12 +67,14 @@ uint16_t si7021_readHumd(HUMD_READ_t read_type) {
     command = SI7021_HUMD_MEASURE_NOHOLD;
 
   uint8_t transmit_bufBase[] = {command};
-  uint8_t receive_bufBase[2];
+  uint8_t receive_bufBase[3];
   i2c_single_send(SI7021_SLAVE_ADDRESS, *transmit_bufBase);
-  while(i2c_burst_receive(SI7021_SLAVE_ADDRESS, receive_bufBase, 2) != I2C_MASTER_ERR_NONE);
+  while(i2c_burst_receive(SI7021_SLAVE_ADDRESS, receive_bufBase, 3) != I2C_MASTER_ERR_NONE);
 
   uint8_t H = receive_bufBase[0];
   uint8_t L = receive_bufBase[1];
+  uint8_t CS = receive_bufBase[2];
+
   uint16_t humidity = (((H << 8) + L) * 125) / 65536 - 6;
   if (SI7021_DBG) printf("si7021:   humd %d\n", humidity);
   return (H << 8) + L;
@@ -110,4 +121,29 @@ void si7021_reset(){
   uint8_t transmit_bufBase[] = {SI7021_RESET};
   i2c_single_send(SI7021_SLAVE_ADDRESS, *transmit_bufBase);
 
+}
+
+uint8_t si7021_calculateCRC(uint8_t h, uint8_t l, uint8_t checksum) {
+
+  uint8_t crc = 0x00;
+  uint8_t data[] = {h, l};
+
+  uint8_t i, j;
+
+  for (i = 0; i < 2; ++i) {
+    crc ^= data[i];
+    for (j = 8; j > 0; --j) {
+      if (crc & 0x80) {
+        crc = (crc << 1) ^ 0x131;
+      } else {
+        crc = crc << 1;
+      }
+    }
+  }
+
+  if (crc == checksum) {
+    return 1;
+  } else {
+    return 0;
+  }
 }

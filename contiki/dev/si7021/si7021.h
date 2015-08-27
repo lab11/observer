@@ -57,4 +57,6 @@ void si7021_write_userreg(uint8_t data);
 int si7021_read_userreg();
 double si7021_read_electronicID() ;
 
+uint8_t si7021_calculateCRC(uint8_t h, uint8_t l, uint8_t checksum);
+
 #endif /*SI7021_H*/
