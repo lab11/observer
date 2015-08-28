@@ -34,6 +34,8 @@ void setup_before_resume(void);
 void cleanup_before_sleep(void);
 static void periodic_rtimer(struct rtimer *rt, void* ptr);
 
+void callback(uint8_t port, uint8_t pin);
+
 #define PERIOD_T 30*RTIMER_SECOND
 
 /*---------------------------------------------------------------------------*/
@@ -50,10 +52,10 @@ PROCESS_THREAD(blink_process, ev, data) {
 	//amn41122_init();
 	//amn41122_irq_enable();
 
-	lps331ap_init();
+//	lps331ap_init();
 //  SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
 //	leds_toggle(LEDS_RED);
-	mpu9250_init();
+//	mpu9250_init();
 //	leds_toggle(LEDS_BLUE);
 	//mpu9250_motion_interrupt_init(0x0F, 0x06);
 leds_toggle(LEDS_RED);
@@ -68,7 +70,7 @@ leds_off(LEDS_ALL);
 //	GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
 //	ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
 //	GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM),GPIO_PIN_MASK(6));
-	while(1) {
+/*	while(1) {
 		uint32_t press = lps331ap_one_shot();
 //		printf("press %u\n", press);
 		printf("WAI: %u\n", mpu9250_readByte(MPU9250_WHO_AM_I));
@@ -92,8 +94,41 @@ leds_off(LEDS_ALL);
 		clock_delay_usec(50000);
 		leds_toggle(LEDS_GREEN);
 	}
+*/
 
+  GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(5));
+  GPIO_SET_INPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(5));
+ 
+  GPIO_POWER_UP_ON_RISING(GPIO_B_NUM, GPIO_PIN_MASK(5));
+  GPIO_ENABLE_POWER_UP_INTERRUPT(GPIO_B_NUM, GPIO_PIN_MASK(5));
+  
+  ioc_set_over(GPIO_B_NUM, 5, IOC_OVERRIDE_PDE);
+  nvic_interrupt_enable(NVIC_INT_GPIO_PORT_B);
+ 
+  gpio_register_callback(callback, GPIO_B_NUM, 5);
+
+int varb = 0;
 	while(1) {
+	//	printf("POWERUP STATUS: %x\n", GPIO_GET_POWER_UP_INT_STATUS(GPIO_B_NUM));
+	//	printf("NORMALINT STATUS: %x\n", GPIO_GET_MASKED_INT_STATUS(GPIO_PORT_TO_BASE(GPIO_B_NUM)));
+		printf("INT ENABLE STAT: %x\n", REG((GPIO_PORT_TO_BASE(GPIO_B_NUM)) + GPIO_PI_IEN));
+		if (varb > 5) {
+			GPIO_DISABLE_POWER_UP_INTERRUPT(GPIO_B_NUM, GPIO_PIN_MASK(5));
+		}
+		varb++;
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+ 		clock_delay_usec(50000);
+		clock_delay_usec(50000);
+	}
+
+	while(1)  {
 		PROCESS_YIELD();
 
 		setup_before_resume();
@@ -157,4 +192,30 @@ static void periodic_rtimer(struct rtimer *rt, void* ptr){
      //}
      INTERRUPTS_ENABLE();
    return;
+	unsigned char crc = 0x00;  
+	uint8_t data[] = {0x6a, 0x14};
+
+	char i, j;
+
+    	for (i = 0; i < 2; i++) {
+		crc ^= data[i];
+
+		for (j = 8; j > 0; j--) {
+			if (crc & 0x80)
+				crc = (crc << 1) ^ 0x131;
+			else
+				crc = crc << 1;
+		}
+
+	}
+}
+
+void callback(uint8_t port, uint8_t pin) {
+  INTERRUPTS_DISABLE();
+
+  printf("POWERUP IN\n");
+
+  INTERRUPTS_ENABLE();
+
+  return;
 }
