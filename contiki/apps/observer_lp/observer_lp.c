@@ -33,9 +33,10 @@
 void setup_before_resume(void);
 void cleanup_before_sleep(void);
 //static void periodic_rtimer(struct rtimer *rt, void* ptr);
+
 static void periodic_vtimer(void);
-void rtc_callback(void);
-void amn41122_callback(void);
+void rtc_callback(uint8_t port, uint8_t pin);
+void amn41122_callback(uint8_t port, uint8_t pin);
 
 typedef enum WakeEvents { 
 			DEFAULTEV, 
@@ -170,7 +171,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 	si1147_als_data_t als_data;
 
-	amn41122_irq_enable(amn41122_callback);
+	amn41122_irq_enable((gpio_callback_t)amn41122_callback);
 	//adc121c021_config();
 
 
@@ -221,7 +222,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 	rv3049_set_alarm(&alarm_time, ae_mask);
 	rv3049_clear_int_flag();
 	clock_delay_usec(50000);
-	rv3049_interrupt_enable(rtc_callback);
+	rv3049_interrupt_enable((gpio_callback_t)rtc_callback);
 	//rv3049_set_alarm(&alarm_time, ae_mask);
 
 
@@ -314,7 +315,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		si1147_als_force_read(&als_data);
 		// printf("LIGHT: %d\n", als_data.vis.val);
 		//adc121c021_read_amplitude();
-		buf[0] = 0x02;
+		buf[0] = 0x03;
 		buf[1] = temp;
 		buf[2] = (temp & 0xFF00) >> 8;
 		buf[3] = rh;
@@ -525,7 +526,7 @@ static void periodic_vtimer() {
 }
 
 
-void rtc_callback() {
+void rtc_callback(uint8_t port, uint8_t pin) {
 	INTERRUPTS_DISABLE();
 
 	leds_toggle(LEDS_BLUE);
@@ -534,7 +535,7 @@ void rtc_callback() {
 	return;
 }
 
-void amn41122_callback() {
+void amn41122_callback(uint8_t port, uint8_t pin) {
 	//leds_on(LEDS_RED);
 	INTERRUPTS_DISABLE();
 
