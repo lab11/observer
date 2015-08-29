@@ -55,6 +55,7 @@ static uint8_t counter = 0;
 //static struct timer mytime;
 static struct vtimer pir_vtimer;
 static uint8_t pir_motion = 0;
+static uint8_t pir_motion_reset = 0;
 
 volatile uint8_t rtimer_expired = 0;
 volatile uint8_t accel_event = 0;
@@ -283,6 +284,14 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 			rv3049_clear_int_flag();
 		}
 
+		// if PIR Motion PowerUp Int is disabled, increment reset value
+		if (!(REG(AMN41122_OUT_BASE + GPIO_PI_IEN) & 0x2000)) {
+			pir_motion_reset++;
+			if (pir_motion_reset > 2) {
+				GPIO_ENABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+			}
+		}
+
 		//printf("UNDER YIELD\n");
 
 		/* check who woke me up */
@@ -315,7 +324,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		si1147_als_force_read(&als_data);
 		// printf("LIGHT: %d\n", als_data.vis.val);
 		//adc121c021_read_amplitude();
-		buf[0] = 0x03;
+		buf[0] = 0x02;
 		buf[1] = temp;
 		buf[2] = (temp & 0xFF00) >> 8;
 		buf[3] = rh;
@@ -503,6 +512,7 @@ static void periodic_vtimer() {
 	INTERRUPTS_DISABLE();
 	//rtimer_expired = 1;
 
+	pir_motion_reset = 0;
 	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
 	GPIO_ENABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
 	//leds_off(LEDS_RED);
