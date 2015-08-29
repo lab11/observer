@@ -1,0 +1,632 @@
+<!DOCTYPE>
+<meta charset="utf-8">
+<style>
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+/*.x.axis path {
+  display: none;
+}*/
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
+}
+.dot {
+  stroke: #000;
+}
+.tooltip {
+  position: absolute;
+  width: 200px;
+  height: 28px;
+  pointer-events: none;
+}
+
+</style>
+<html>
+	<head>
+		<script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+		<script type="text/javascript" src= "../js/attempt_1.js"></script>
+		<script src="https://cdn.socket.io/socket.io-1.3.5.js"></script>
+		</head>
+	<body>
+	</body>
+
+<script>
+
+var historyTime = 3*60*60*1000; // hrs*mins*secs*msecs
+
+var blob = { "id" : 0, "time" : (new Date).getTime() , "temp" : 24.3, "rh" : 36.5, "press" : 987.2 };
+var blob2 = { "id" : 0, "time" : (new Date).getTime() + 1*60*1000, "temp" : 25.7, "rh" : 33.1, "press" : 990.6 };
+var blob3 = { "id" : 1, "time" : (new Date).getTime() , "temp" : 28.3, "rh" : 48.5, "press" : 999.2 };
+var blob4 = { "id" : 0, "time" : (new Date).getTime() + 2*60*1000, "temp" : 60.4, "rh" : 89.8, "press" : 1020.6 };
+var blob5 = { "id" : 1, "time" : (new Date).getTime() + 2*60*1000, "temp" : 20.2, "rh" : 17.8, "press" : 1020.6 };
+var blob6 = { "id" : 1, "time" : (new Date).getTime() + 3*60*1000, "temp" : 22.9, "rh" : 25.8, "press" : 1020.6 };
+var blob7 = { "id" : 0, "time" : (new Date).getTime() + 3*60*1000, "temp" : 24.6, "rh" : 32.8, "press" : 1020.6 };
+var blob8 = { "id" : 0, "time" : (new Date).getTime() + 3*60*1000 + 30*1000, "temp" : 29.6, "rh" : 32.8, "press" : 1020.6 };
+var blob9 = { "id" : 0, "time" : (new Date).getTime() + 4*60*1000, "temp" : 30.6, "rh" : 32.8, "press" : 1020.6 };
+var blob10 = { "id" : 1, "time" : (new Date).getTime() + 4*60*1000, "temp" : 24.6, "rh" : 32.8, "press" : 1020.6 };
+var blob11 = { "id" : 1, "time" : (new Date).getTime() + 4*60*1000 + 30*1000, "temp" : 22.6, "rh" : 32.8, "press" : 1020.6 };
+
+/*
+
+
+addData(blob);
+addData(blob2);
+addData(blob3);
+addData(blob4);
+addData(blob5);
+addData(blob6);
+addData(blob7);
+addData(blob8);
+addData(blob9);
+addData(blob10);
+addData(blob11);
+*/
+
+
+var margin = {
+	top: 20,
+	right: 80,
+	bottom: 30,
+	left: 50
+};
+var width = 960 - margin.left - margin.right;
+var height = 500 - margin.top - margin.bottom;
+
+var parseTime = d3.time.format("%m-%d-%Y %X").parse;
+
+var x = d3.time.scale()
+		.range([0, width]);
+/********************** One y scale for each plot ****************************/
+var y_temp = d3.scale.linear()
+		.range([height, 0]);
+
+var y_light = d3.scale.linear()
+		.range([height, 0]);
+var y_press = d3.scale.linear()
+		.range([height, 0]);
+var y_pir = d3.scale.linear()
+		.range([height, 0]);
+/*****************************************************************************/
+
+var color = d3.scale.category10();
+
+/********************** One x for pir and same for others ********************/
+var xAxis = d3.svg.axis()
+		.scale(x)
+		.orient("bottom");
+/*********************** One yAxis for each plot *****************************/
+var yAxis_temp = d3.svg.axis()
+		.scale(y_temp)
+		.orient("left");
+var yAxis_light = d3.svg.axis()
+		.scale(y_light)
+		.orient("left");
+var yAxis_press = d3.svg.axis()
+		.scale(y_press)
+		.orient("left");
+var yAxis_pir = d3.svg.axis()
+		.scale(y_pir)
+		.orient("left");
+/*****************************************************************************/
+
+var line = d3.svg.line()
+		.interpolate("linear")
+		.x(function(d) { return x(d.time); })
+		.y(function(d) { return y_temp(d.temp); });
+
+var line_light = d3.svg.line()
+		.interpolate("linear")
+		.x(function(d) { return x(d.time); })
+		.y(function(d) { return y_light(d.light); });
+var line_press = d3.svg.line()
+		.interpolate("linear")
+		.x(function(d) { return x(d.time); })
+		.y(function(d) { return y_press(d.press); });
+var line_pir = d3.svg.line()
+		.interpolate("linear")
+		.x(function(d) { return x(d.time); })
+		.y(function(d) { return y_pir(d.pir); });
+
+var svg = d3.select("body").append("svg")
+				.attr("width", width + margin.left + margin.right)
+				.attr("height", height + margin.top + margin.bottom)
+			   .append("g")
+				.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var svg_light = d3.select("body").append("svg")
+					.attr("width", width + margin.left + margin.right)
+					.attr("height", height + margin.top + margin.bottom)
+				.append("g")
+					.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+var svg_press = d3.select("body").append("svg")
+					.attr("width", width + margin.left + margin.right)
+					.attr("height", height + margin.top + margin.bottom)
+				.append("g")
+					.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+var svg_pir = d3.select("body").append("svg")
+					.attr("width", width + margin.left + margin.right)
+					.attr("height", height + margin.top + margin.bottom)
+				.append("g")
+					.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+
+
+var displayData = function(allSensors) {	
+	var colorArr = [];
+	allSensors.forEach(function(value, index, array1) {
+		if (value.length != 0) {
+			colorArr.push(index);
+		}
+	});
+//	console.log(colorArr);
+	color.domain(colorArr);
+
+	var allSensorsTemp = allSensors;
+
+	allSensorsTemp.forEach(function(value, index, array1) {
+		if (value.length != 0) {
+			value.forEach(function(d) {
+				d.time = epochToDateTime(d.time);
+				d.time = parseTime(d.time);
+			});
+		}
+	});
+
+	var sensors = color.domain().map(function(id) {
+		return {
+			id: id,
+			temp_values: allSensorsTemp[id].map(function(d) {
+				return {time: d.time, temp: +d.temp};
+			}),
+			light_values: allSensorsTemp[id].map(function(d) {
+				return {time: d.time, light: +d.light};
+			}),
+			press_values: allSensorsTemp[id].map(function(d) {
+				return {time: d.time, press: +d.press};
+			}),
+			pir_values: allSensorsTemp[id].map(function(d) {
+				return {time: d.time, pir: +d.pir};
+			})
+		};
+	});
+
+	x.domain([
+		d3.min(sensors, function(c) { return d3.min(c.temp_values, function(v) { return v.time; }); }),
+		d3.max(sensors, function(c) { return d3.max(c.temp_values, function(v) { return v.time; }); })
+	]);
+
+
+	y_temp.domain([
+		d3.min(sensors, function(c) { return d3.min(c.temp_values, function(v) { return v.temp; }); }),
+		d3.max(sensors, function(c) { return d3.max(c.temp_values, function(v) { return v.temp; }); })
+	]);
+	y_light.domain([
+		d3.min(sensors, function(c) { return d3.min(c.light_values, function(v) { return v.light;}); }),
+		d3.max(sensors, function(c) { return d3.max(c.light_values, function(v) { return v.light;}); })
+	]);
+	y_press.domain([
+		d3.min(sensors, function(c) { return d3.min(c.press_values, function(v) { return v.press;}); }),
+		d3.max(sensors, function(c) { return d3.max(c.press_values, function(v) { return v.press;}); })
+	]);
+	y_pir.domain([
+		d3.min(sensors, function(c) { return d3.min(c.pir_values, function(v) { return v.pir; }); }),
+		d3.max(sensors, function(c) { return d3.max(c.pir_values, function(v) { return v.pir; }); })
+	]);
+
+//	svg.selectAll("g").remove();
+	
+	svg.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(0," + height + ")")
+		.call(xAxis);
+	svg_light.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(0," + height + ")")
+		.call(xAxis);
+	svg_press.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(0," + height + ")")
+		.call(xAxis);
+	svg_pir.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(0," + height + ")")
+		.call(xAxis);
+
+	
+	svg.append("g")
+		.attr("class", "y axis")
+		.call(yAxis_temp)
+	   .append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", 6)
+		.attr("dy", ".71em")
+		.style("text-anchor", "end")
+		.style("font-size", "15px")
+		.text("Temperature (C)");
+	svg_light.append("g")
+		.attr("class", "y axis")
+		.call(yAxis_light)
+   	    .append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", 6)
+		.attr("dy", ".71em")
+		.style("text-anchor", "end")
+		.style("font-size", "15px")
+		.text("Light (lux)");
+	svg_press.append("g")
+		.attr("class", "y axis")
+		.call(yAxis_press)
+   	    .append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", 6)
+		.attr("dy", ".71em")
+		.style("text-anchor", "end")	
+		.style("font-size", "15px")
+		.text("Pressure (mbar)");
+	svg_pir.append("g")
+		.attr("class", "y axis")
+		.call(yAxis_pir)
+	    .append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", 6)
+		.attr("dy", ".71em")
+		.style("text-anchor", "end")
+		.style("font-size", "15px")
+		.text("PIR Motion");
+
+
+	var sensor = svg.selectAll("sensor")
+			.data(sensors)
+			.enter().append("g")
+			.attr("class", "sensor");
+	var sensor_light = svg.selectAll("sensor_light")
+			.data(sensors)
+			.enter().append("g")
+			.attr("class", "sensor_light");
+	var sensor_press = svg.selectAll("sensor_press")
+			.data(sensors)
+			.enter().append("g")
+			.attr("class", "sensor_press");
+	var sensor_pir = svg.selectAll("sensor_pir")
+			.data(sensors)
+			.enter().append("g")
+			.attr("class", "sensor_pir");
+
+
+	sensor.append("path")
+		.attr("class", "line")
+		.attr("d", function(d) { return line(d.temp_values); })
+		.style("stroke", function(d) { return color(d.id); });
+	sensor_light.append("path")
+		.attr("class", "line")
+		.attr("d", function(d) { return line_light(d.light_values); })
+		.style("stroke", function(d) { return color(d.id); });
+	sensor_press.append("path")
+		.attr("class", "line")
+		.attr("d", function(d) { return line_press(d.press_values); })
+		.style("stroke", function(d) { return color(d.id); });
+
+	sensor_pir.append("path")
+		.attr("class", "line")
+		.attr("d", function(d) { return line(d.pir_values); })
+		.style("stroke", function(d) { return color(d.id); }); 
+
+	sensor.append("text")
+		.datum(function(d) { console.log(d); return { id: d.id, value: d.temp_values[d.temp_values.length - 1]}; })
+		.attr("transform", function(d) { return "translate(" + x(d.value.time) + "," + y_temp(d.value.temp) + ")"; })
+		.attr("x", 3)
+		.attr("dy", ".35em")
+		.text(function(d) { return d.id; });
+	sensor_light.append("text")
+		.datum(function(d) { console.log(d); return { id: d.id, value: d.light_values[d.light_values - 1]}; })
+		.attr("transform", function(d) { return "translate(" + x(d.value.time) + "," + y_light(d.value.light) + ")"; })
+		.attr("x", 3)
+		.attr("dy", ".35em")
+		.text(function(d) { return d.id; });	
+	sensor_press.append("text")
+		.datum(function(d) { console.log(d); return { id: d.id, value: d.press_values[d.press_values - 1]}; })
+		.attr("transform", function(d) { return "translate(" + x(d.value.time) + "," + y_press(d.value.press) + ")"; })
+		.attr("x", 3)
+		.attr("dy", ".35em")
+		.text(function(d) { return d.id; });	
+
+
+
+
+/*	var legendSpace = width/sensors.length;
+
+	sensors.forEach( function(d,i) {
+		svg.append("text")
+			.attr("x", (legendSpace/2) + i*legendSpace)
+			.attr("y", height + (margin.bottom/2) + 5)
+			.attr("y", height + (margin.bottom/2) + 5)
+			.attr("class", "legend")
+			.style("fill", function() {
+				return color(d.id);
+			})
+			.text(d.id);
+	});*/
+
+}
+
+
+
+
+var updateData = function(allSensors) {
+	var colorArr = [];
+	allSensors.forEach(function(value, index, array1) {
+		if (value.length != 0) {
+			colorArr.push(index);
+		}
+	});
+//	console.log(colorArr);
+	color.domain(colorArr);
+//	console.log(color.range());
+
+	var allSensorsTemp = allSensors;
+
+	allSensorsTemp.forEach(function(value, index, array1) {
+		value.forEach(function(d) {
+			d.time = epochToDateTime(d.time);
+			d.time = parseTime(d.time);
+		});
+	});
+
+	var sensors = color.domain().map(function(id) {
+		return {
+			id: id,
+			temp_values: allSensorsTemp[id].map(function(d) {
+				return {time: d.time, temp: +d.temp};
+			}),
+			light_values: allSensorsTemp[id].map(function(d) {
+				return {time: d.time, light: +d.light};
+			}),
+			press_values: allSensorsTemp[id].map(function(d) {
+				return {time: d.time, press: +d.press};
+			}),
+			pir_values: allSensorsTemp[id].map(function(d) { 
+				return {time: d.time, pir: +d.pir};
+			})
+		};
+	});
+
+	x.domain([
+		d3.min(sensors, function(c) { return d3.min(c.temp_values, function(v) { return v.time; }); }),
+		d3.max(sensors, function(c) { return d3.max(c.temp_values, function(v) { return v.time; }); })
+	]);
+
+	y_temp.domain([
+		d3.min(sensors, function(c) { return d3.min(c.temp_values, function(v) { return v.temp; }); }),
+		d3.max(sensors, function(c) { return d3.max(c.temp_values, function(v) { return v.temp; }); })
+	]);
+	y_light.domain([
+		d3.min(sensors, function(c) { return d3.min(c.light_values, function(v) { return v.light; }); }),
+		d3.max(sensors, function(c) { return d3.max(c.light_values, function(v) { return v.light; }); })
+	]);
+	y_press.domain([
+		d3.min(sensors, function(c) { return d3.min(c.press_values, function(v) { return v.press;}); }),
+		d3.max(sensors, function(c) { return d3.max(c.press_values, function(v) { return v.press;}); })
+	]);
+	y_pir.domain([
+		d3.min(sensors, function(c) { return d3.min(c.pir_values, function(v) { return v.pir; }); }),
+		d3.max(sensors, function(c) { return d3.max(c.pir_values, function(v) { return v.pir; }); })
+	]);
+	
+
+	d3.transition(svg).select('.y.axis')
+		.call(yAxis_temp);
+	d3.transition(svg_light).select('.y.axis')
+		.call(yAxis_light);
+	d3.transition(svg_press).select('.y.axis')
+		.call(yAxis_press);
+	d3.transition(svg_pir).select('.y.axis')
+		.call(yAxis_pir);
+
+	d3.transition(svg).select('.x.axis')
+		.call(xAxis);
+	d3.transition(svg_light).select('.x.axis')
+		.call(xAxis);
+	d3.transition(svg_press).select('.x.axis')
+		.call(xAxis);
+	d3.transition(svg_pir).select('.x.axis')
+		.call(xAxis);
+
+	var sensor = svg.selectAll(".sensor")
+			.data(sensors);
+	var sensor_light = svg_light.selectAll(".sensor_light")
+			.data(sensors);
+	var sensor_press = svg_press.selectAll(".sensor_press")
+			.data(sensors);
+	var sensor_pir = svg_pir.selectAll(".sensor_pir")
+			.data(sensors);
+
+	var sensorEnter = sensor.enter().append("g")
+			.attr("class", "sensor");
+	var sensor_lightEnter = sensor_light.enter().append("g")
+			.attr("class", "sensor_light");
+	var sensor_pressEnter = sensor_press.enter().append("g")
+			.attr("class", "sensor_press");
+	var sensor_pirEnter = sensor_pir.enter().append("g")
+			.attr("class", "sensor_pir");
+
+	sensorEnter.append("path")
+		.attr("class", "line")
+		.attr("d", function(d) { return line(d.temp_values); } )
+		.style("stroke", function(d) { return color(d.id); } );
+	sensor_lightEnter.append("path")
+		.attr("class", "line")
+		.attr("d", function(d) { return line_light(d.light_values); })
+		.style("stroke", function(d) { return color(d.id); } );	
+	sensor_pressEnter.append("path")
+		.attr("class", "line")
+		.attr("d", function(d) { return line_press(d.press_values); })
+		.style("stroke", function(d) { return color(d.id); } );	
+	sensor_pirEnter.append("path")
+		.attr("class", "line")
+		.attr("d", function(d) { return line_pir(d.pir_values); })
+		.style("stroke", function(d) { return color(d.id); });
+
+	sensorEnter.append("text")
+		.datum(function(d) { console.log(d); return { id: d.id, value: d.temp_values[d.temp_values.length - 1]}; })
+		.attr("transform", function(d) { return "translate(" + x(d.value.time) + "," + y_temp(d.value.temp) + ")"; })
+		.attr("x", 3)
+		.attr("dy", ".35em")
+		.text(function(d) { return d.id; });
+	sensor_lightEnter.append("text")
+		.datum(function(d) { console.log(d); return { id: d.id, value: d.light_values[d.light_values.length -1]}; })
+		.attr("transform", function(d) { return "translate(" + x(d.value.time) + "," + y_light(d.value.light) + ")"; })
+		.attr("x", 3)
+		.attr("dy", ".35em")
+		.text(function(d) { return d.id; });
+	sensor_pressEnter.append("text")
+		.datum(function(d) { console.log(d); return { id: d.id, value: d.press_values[d.press_values.length -1]}; })
+		.attr("transform", function(d) { return "translate(" + x(d.value.time) + "," + y_press(d.value.press) + ")"; })
+		.attr("x", 3)
+		.attr("dy", ".35em")
+		.text(function(d) { return d.id; });
+
+	var legendSpace = height/sensors.length;
+	var legend = sensorEnter.append("g")
+		.attr("class", "legend");
+		
+		legend.append("text")
+		.datum(function(d) { return { id: d.id };})
+		.attr("x", function(d,i) { return (legendSpace/2) + i*legendSpace; })
+		.attr("y", height + margin.bottom/2 + 5)
+		.text(function(d) { return d.id; });
+
+	
+	sensorUpdate =  d3.transition(sensor);
+	sensor_lightUpdate = d3.transition(sensor_light);
+	sensor_pressUpdate = d3.transition(sensor_press);
+	sensor_pirUpdate = d3.transition(sensor_pir);	
+
+	sensorUpdate.select('path')
+		.transition().duration(0)
+		.attr("d", function(d) {
+			return line(d.temp_values);
+		})
+		.style("stroke", function(d) { return color(d.id); });
+	sensor_lightUpdate.select('path')
+		.transition().duration(0)
+		.attr("d", function(d) {
+			return line_light(d.light_values);
+		})
+		.style("stroke", function(d) { return color(d.id); });
+	sensor_pressUpdate.select('path')
+		.transition().duration(0)
+		.attr("d", function(d) {
+			return line_press(d.press_values);
+		})
+		.style("stroke", function(d) { return color(d.id); });
+	sensor_pirUpdate.select('path')
+		.transition().duration(0)
+		.attr("d", function(d) {
+			return line_pir(d.pir_values);
+		});
+
+	sensorUpdate.select('text')
+		.transition().duration(0)
+		.attr("transform", function(d) { return "translate(" + x(d.temp_values[d.temp_values.length - 1].time) + "," + y_temp(d.temp_values[d.temp_values.length-1].temp) + ")"; } )
+		.text(function(d) { return d.id; }); 
+	sensor_lightUpdate.select('text')
+		.transition().duration(0)
+		.attr("transform", function(d) { return "translate(" + x(d.light_values[d.light_values.length - 1].time) + "," + y_light(d.light_values[d.light_values.length-1].light) + ")"; } )
+		.text(function(d) { return d.id; });
+	sensor_pressUpdate.select('text')
+		.transition().duration(0)
+		.attr("transform", function(d) { return "translate(" + x(d.press_values[d.press_values.length - 1].time) + "," + y_press(d.press_values[d.press_values.length-1].press) + ")"; } )
+		.text(function(d) { return d.id; });
+		//.attr("x", 3)
+		//.attr("dy", ".35em")
+		//.text(function(d) { return d.id; });
+
+	sensorUpdate.select('.legend')
+		.transition().duration(0)
+		.select('text')
+		.attr("y", function(d,i) { return (legendSpace/2) + i*legendSpace; })
+		.attr("x", width + margin.left/2 + 8)
+		.style("fill", function(d) { return color(d.id); })
+		.style("font-size", "15px")
+		.style("font-weight", "bold")
+		.text(function(d) { return "ID:" + d.id; });
+
+	sensor.exit().remove();
+	sensor_light.exit().remove();
+	sensor_press.exit().remove();
+	sensor_pir.exit().remove();
+
+/*	var legendSpace = width/sensors.length;
+
+	sensors.forEach( function(d,i) {
+		svg.append("text")
+			.attr("x", (legendSpace/2) + i*legendSpace)
+			.attr("y", height + (margin.bottom/2) + 5)
+			.attr("class", "legend")
+			.style("fill", function() {
+				return color(d.id);
+			})
+			.text(d.id);
+	});
+*/
+
+/*
+	sensor.select(".line")
+		.duration(750)
+		.attr("d", function(d) { return line(d.values); })
+		.style("stroke", function(d) { return color(d.id); });
+*/
+/*	svg.select(".x.axis")
+		.duration(750)
+		.call(xAxis);
+	
+	svg.select(".y.axis")
+		.duration(750)
+		.call(yAxis);
+*/
+}
+
+displayData(sensors);
+
+
+var socket = new WebSocket('ws://websocket.gatd.io/939e5fea-3662-444f-b47d-a0ff1b94fffe');
+
+socket.onopen = function() {
+	console.log("Connected");
+	socket.send(JSON.stringify({ id : {$gte : 0}, time : {$gte : (new Date).getTime() - historyTime } }));
+//	socket.send(JSON.stringify({ id: {$gte: 0}, time: {$gte: 1440297010000} } ));
+};
+
+socket.onmessage = function (e) {
+	//console.log(e.data);
+	var obj = JSON.parse(e.data);
+	//console.log(obj);
+	addData(JSON.parse(e.data));
+	updateData(sensors);
+//	displayData(sensors);
+};
+
+socket.onclose = function() {
+	console.log("closed");
+};
+
+
+</script>
+
+</html>
