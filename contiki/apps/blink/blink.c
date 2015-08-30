@@ -52,25 +52,25 @@ PROCESS_THREAD(blink_process, ev, data) {
 	//amn41122_init();
 	//amn41122_irq_enable();
 
-//	lps331ap_init();
+	lps331ap_init();
 //  SPI_CS_SET(LPS331AP_CS_PORT, LPS331AP_CS_PIN);
 //	leds_toggle(LEDS_RED);
-//	mpu9250_init();
+	mpu9250_init();
 //	leds_toggle(LEDS_BLUE);
 	//mpu9250_motion_interrupt_init(0x0F, 0x06);
 leds_toggle(LEDS_RED);
-//	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
+	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 leds_toggle(LEDS_BLUE);
-//	si1147_als_data_t als_data;
+	si1147_als_data_t als_data;
 	//cc2538_rf_driver.off();
 	//cleanup_before_sleep();
 	//rtimer_set(&my_timer, RTIMER_NOW() + PERIOD_T, 1, &periodic_rtimer, NULL);
 leds_off(LEDS_ALL);
-//	GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
-//	GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
-//	ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
-//	GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM),GPIO_PIN_MASK(6));
-/*	while(1) {
+	GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
+	GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
+	ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
+	GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM),GPIO_PIN_MASK(6));
+	while(1) {
 		uint32_t press = lps331ap_one_shot();
 //		printf("press %u\n", press);
 		printf("WAI: %u\n", mpu9250_readByte(MPU9250_WHO_AM_I));
@@ -78,10 +78,10 @@ leds_off(LEDS_ALL);
   		int16_t ay = mpu9250_readSensor(MPU9250_ACCEL_YOUT_L, MPU9250_ACCEL_YOUT_H);
    		int16_t az = mpu9250_readSensor(MPU9250_ACCEL_ZOUT_L, MPU9250_ACCEL_ZOUT_H);
 //		printf("x: %i, y: %i, z: %i\n", ax, ay, az);		
-//		si1147_als_force_read(&als_data);
+		si1147_als_force_read(&als_data);
 		uint16_t temp = si7021_readTemp(TEMP_NOHOLD);
 //		printf("temp\n");
-//		adc121c021_read_amplitude();
+		adc121c021_read_amplitude();
 		clock_delay_usec(50000);
 		clock_delay_usec(50000);
 		clock_delay_usec(50000);
@@ -94,8 +94,8 @@ leds_off(LEDS_ALL);
 		clock_delay_usec(50000);
 		leds_toggle(LEDS_GREEN);
 	}
-*/
 
+/*
   GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(5));
   GPIO_SET_INPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(5));
  
@@ -127,7 +127,7 @@ int varb = 0;
  		clock_delay_usec(50000);
 		clock_delay_usec(50000);
 	}
-
+*/
 	while(1)  {
 		PROCESS_YIELD();
 
