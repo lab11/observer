@@ -24,6 +24,7 @@
 #include "net/packetbuf.h"
 #include "sys/rtimer.h"
 #include "vtimer.h"
+#include "wakeevent.h"
 
 
 #define PERIOD_T 30*RTIMER_SECOND
@@ -36,35 +37,23 @@
 // prototypes
 void setup_before_resume(void);
 void cleanup_before_sleep(void);
-//static void periodic_rtimer(struct rtimer *rt, void* ptr);
 
 static void periodic_vtimer(void);
 void rtc_callback(uint8_t port, uint8_t pin);
 void amn41122_callback(uint8_t port, uint8_t pin);
 
-typedef enum WakeEvents { 
-			DEFAULTEV, 
-			PERIODIC_EV,
-			ACCEL_EV, 
-			PIR_EV 
-} wakeevents_t;
-
-static wakeevents_t wakeevent = DEFAULTEV;
 
 
 static uint8_t counter = 0;
-//static struct rtimer my_timer;
-//static struct rtimer my_timer2;
+
 //static struct vtimer my_vtimer;
-//static struct timer mytime;
+
 static struct vtimer pir_vtimer;
 static uint8_t pir_motion = 0;
 static uint8_t pir_motion_reset = 0;
 
-volatile uint8_t rtimer_expired = 0;
-volatile uint8_t accel_event = 0;
-volatile uint8_t motion_event = 0;
-
+static struct wakeEvent pir_event = {PIR_EV, NULL};
+static struct wakeEvent rtc_event = {PERIODIC_EV, NULL};
 
 
 /*---------------------------------------------------------------------------*/
@@ -280,7 +269,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		//rv3049_clear_int_flag();
 		//unsigned char leds_result = leds_get();
 		//if (leds_result & LEDS_RED) {
-		if (wakeevent == PIR_EV) {
+		/*if (wakeevent == PIR_EV) {
 			schedule_vtimer(&pir_vtimer, 30*VTIMER_SECOND);
 			//leds_off(LEDS_RED);
 			pir_motion = 1;
@@ -288,7 +277,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 			rv3049_clear_int_flag();
 		} else {
 			leds_toggle(LEDS_RED); // error
-		}
+		}*/
 
 		// if PIR Motion PowerUp Int is disabled, increment reset value
 		if (!(REG(AMN41122_OUT_BASE + GPIO_PI_IEN) & 0x2000)) {
@@ -303,46 +292,89 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		/* check who woke me up */
 		/*switch (wakeevent) {
 			case PERIODIC_EV:
-					//
+					rv3049_clear_int_flag();
 					break;
-			case ACCEL_EV:
-					//
-					break;
-			case ACCEL_INT_REENABLE:
-					//
-					break;
-			case MOTION_EV:
-					//
+			case PIR_EV:
+					schedule_vtimer(&pir_vtimer, 30*VTIMER_SECOND);
+					pir_motion = 1;
 					break;
 			case DEFAULTEV:
 			default:
 					// blink red led? idk something to indicate error
+					leds_on(LEDS_RED);
 					break;
 
 		}*/
+
+		struct wakeEvent* head = popEvent();
+		while (head != NULL) {
+			switch (head->wake_type) {
+				case PERIODIC_EV:
+					rv3049_clear_int_flag();
+					pir_motion = 0;
+					break;
+				case PIR_EV:
+					schedule_vtimer(&pir_vtimer, 30*VTIMER_SECOND);
+					pir_motion = 1;
+					break;
+				default:	
+					leds_on(LEDS_RED);
+					break;
+			}
+
+			uint32_t press = lps331ap_one_shot();// lps331ap_one_shot();
+			// printf("PRESS: %d\n", press);
+			uint16_t temp = si7021_readTemp(TEMP_NOHOLD);
+			uint16_t rh = si7021_readHumd(RH_NOHOLD);
+			si1147_als_force_read(&als_data);
+			// printf("LIGHT: %d\n", als_data.vis.val);
+			//adc121c021_read_amplitude();
+			buf[0] = 0x01;
+			buf[1] = temp;
+			buf[2] = (temp & 0xFF00) >> 8;
+			buf[3] = rh;
+			buf[4] = (rh & 0xFF00) >> 8;
+			buf[5] = als_data.vis.b.lo;
+			buf[6] = als_data.vis.b.hi;
+			buf[7] = press & 0x000000FF;
+			buf[8] = (press & 0x0000FF00) >> 8;
+			buf[9] = (press & 0x00FF0000) >> 16;
+			buf[10] = pir_motion;
+
+			packetbuf_copyfrom(buf, 11);
+			cc2538_on_and_transmit();
+			NETSTACK_RDC.off(0);
+			NETSTACK_MAC.off(0);
+			cc2538_rf_driver.off();
+			clock_delay_usec(50000);
+
+			head = popEvent();
+
+		}
+
 		//rv3049_read_time(&times);
 		//printf("TIME: %u/%u/%u, %u:%u:%u\n", times.month, times.days, times.year, times.hours, times.minutes, times.seconds);
 
-		uint32_t press = lps331ap_one_shot();// lps331ap_one_shot();
-		// printf("PRESS: %d\n", press);
-		uint16_t temp = si7021_readTemp(TEMP_NOHOLD);
-		uint16_t rh = si7021_readHumd(RH_NOHOLD);
-		si1147_als_force_read(&als_data);
-		// printf("LIGHT: %d\n", als_data.vis.val);
-		//adc121c021_read_amplitude();
-		buf[0] = 0x01;
-		buf[1] = temp;
-		buf[2] = (temp & 0xFF00) >> 8;
-		buf[3] = rh;
-		buf[4] = (rh & 0xFF00) >> 8;
-		buf[5] = als_data.vis.b.lo;
-		buf[6] = als_data.vis.b.hi;
-		buf[7] = press & 0x000000FF;
-		buf[8] = (press & 0x0000FF00) >> 8;
-		buf[9] = (press & 0x00FF0000) >> 16;
-		buf[10] = pir_motion;
-		pir_motion = 0;
-		wakeevent = DEFAULTEV;
+		// uint32_t press = lps331ap_one_shot();// lps331ap_one_shot();
+		// // printf("PRESS: %d\n", press);
+		// uint16_t temp = si7021_readTemp(TEMP_NOHOLD);
+		// uint16_t rh = si7021_readHumd(RH_NOHOLD);
+		// si1147_als_force_read(&als_data);
+		// // printf("LIGHT: %d\n", als_data.vis.val);
+		// //adc121c021_read_amplitude();
+		// buf[0] = 0x01;
+		// buf[1] = temp;
+		// buf[2] = (temp & 0xFF00) >> 8;
+		// buf[3] = rh;
+		// buf[4] = (rh & 0xFF00) >> 8;
+		// buf[5] = als_data.vis.b.lo;
+		// buf[6] = als_data.vis.b.hi;
+		// buf[7] = press & 0x000000FF;
+		// buf[8] = (press & 0x0000FF00) >> 8;
+		// buf[9] = (press & 0x00FF0000) >> 16;
+		// buf[10] = pir_motion;
+		// pir_motion = 0;
+
 		// buf[0] = 0x01;
 		// buf[1] = 0x02;
 		// buf[2] = 0x03;
@@ -368,8 +400,8 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		clock_delay_usec(50000);
 		leds_toggle(LEDS_GREEN);*/
 	
-		packetbuf_copyfrom(buf, 11);
-		cc2538_on_and_transmit();
+		// packetbuf_copyfrom(buf, 11);
+		// cc2538_on_and_transmit();
 
 		/*leds_toggle(LEDS_RED);
 		clock_delay_usec(50000);
@@ -384,10 +416,10 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		clock_delay_usec(50000);
 		leds_toggle(LEDS_RED);*/
 
-		NETSTACK_RDC.off(0);
-		NETSTACK_MAC.off(0);
-		cc2538_rf_driver.off();
-		clock_delay_usec(50000);
+		// NETSTACK_RDC.off(0);
+		// NETSTACK_MAC.off(0);
+		// cc2538_rf_driver.off();
+		// clock_delay_usec(50000);
 
 		//volatile uint8_t i = 0;
 		/*timer_set(&mytime, 5*CLOCK_SECOND);
@@ -546,11 +578,10 @@ static void periodic_vtimer() {
 void rtc_callback(uint8_t port, uint8_t pin) {
 	INTERRUPTS_DISABLE();
 
-	if (wakeevent == DEFAULTEV) {
-		leds_toggle(LEDS_BLUE);
-		process_poll(&observer_lp_process);
-		wakeevent = PERIODIC_EV;
-	}
+	addEvent(&rtc_event);
+
+	leds_toggle(LEDS_BLUE);
+	process_poll(&observer_lp_process);
 
 	INTERRUPTS_ENABLE();
 	return;
@@ -560,13 +591,11 @@ void amn41122_callback(uint8_t port, uint8_t pin) {
 	//leds_on(LEDS_RED);
 	INTERRUPTS_DISABLE();
 
-	//pir_motion = 1;
-	if (wakeevent == DEFAULTEV) {
-		wakeevent = PIR_EV;
-	 	GPIO_DISABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
-	 	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
-	  	process_poll(&observer_lp_process);
-	}
+	addEvent(&pir_event);
+
+ 	GPIO_DISABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+ 	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+  	process_poll(&observer_lp_process);
 
   	INTERRUPTS_ENABLE();
 	return;
