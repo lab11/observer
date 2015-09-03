@@ -43,7 +43,7 @@ body {
 
 <script>
 
-var historyTime = 3*60*60*1000; // hrs*mins*secs*msecs
+var historyTime = 5*60*60*1000; // hrs*mins*secs*msecs
 
 var blob = { "id" : 0, "time" : (new Date).getTime() , "temp" : 24.3, "rh" : 36.5, "press" : 987.2 };
 var blob2 = { "id" : 0, "time" : (new Date).getTime() + 1*60*1000, "temp" : 25.7, "rh" : 33.1, "press" : 990.6 };
@@ -605,12 +605,14 @@ var updateData = function(allSensors) {
 displayData(sensors);
 
 
-var socket = new WebSocket('ws://websocket.gatd.io/939e5fea-3662-444f-b47d-a0ff1b94fffe');
+//var socket = new WebSocket('ws://websocket.gatd.io/939e5fea-3662-444f-b47d-a0ff1b94fffe');
+var socket = new WebSocket('ws://websocket.gatd.io/6775b281-618c-49ec-83e9-20f1043a1a1a');
 
 socket.onopen = function() {
 	console.log("Connected");
-	socket.send(JSON.stringify({ id : {$gte : 0}, time : {$gte : (new Date).getTime() - historyTime } }));
+//	socket.send(JSON.stringify({ id : {$gte : 0}, time : {$gte : (new Date).getTime() - historyTime } }));
 //	socket.send(JSON.stringify({ id: {$gte: 0}, time: {$gte: 1440297010000} } ));
+	socket.send(JSON.stringify({ id : {$gte : 0}, '_gatd.time_utc_timestamp' : {$gte : ( (new Date).getTime() - historyTime) *1000} }) );
 };
 
 socket.onmessage = function (e) {

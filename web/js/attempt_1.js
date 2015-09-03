@@ -1,5 +1,5 @@
 
-function sensorData(id, time, temp, rh, press, light, pir) {
+function sensorData(id, temp, rh, press, light, pir, time) {
 	this.id = id;
 	this.time = time;
 	this.temp = temp;
@@ -7,18 +7,19 @@ function sensorData(id, time, temp, rh, press, light, pir) {
 	this.press = press;
 	this.light = light;
 	this.pir = pir;
+	this.time = time;
 }
 
 var sensors = new Array([]);
 
 
 var addData = function(message) {
-	if (message.id === 1 | message.id === 2 | message.id === 3) {
+	if (message.id === 1 | message.id === 2 | message.id === 3 | message.id === 4) {
 		if (typeof sensors[message.id] === 'undefined') {
 			sensors[message.id] = new Array();
 		}
 		if (message.pir === 0 || message.pir === 1) {
-			(sensors[message.id]).push(new sensorData(message.id, message.time, message.temp, message.rh, message.press, message.light, message.pir));	
+			(sensors[message.id]).push(new sensorData(message.id, message.temp, message.rh, message.press, message.light, message.pir, message._gatd.time_utc_timestamp / 1000));	
 
 		updateSensorData(message.id);
 		}
