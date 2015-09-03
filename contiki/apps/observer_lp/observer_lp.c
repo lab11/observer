@@ -29,6 +29,10 @@
 #define PERIOD_T 30*RTIMER_SECOND
 #define PERIOD_T2 45*RTIMER_SECOND
 
+// #ifndef OBSERVER_ID
+// #define OBSERVER_ID=0
+// #endif
+
 // prototypes
 void setup_before_resume(void);
 void cleanup_before_sleep(void);
@@ -42,7 +46,7 @@ typedef enum WakeEvents {
 			DEFAULTEV, 
 			PERIODIC_EV,
 			ACCEL_EV, 
-			MOTION_EV 
+			PIR_EV 
 } wakeevents_t;
 
 static wakeevents_t wakeevent = DEFAULTEV;
@@ -269,19 +273,21 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		// PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 		//printf("YIELDING\n");
 		PROCESS_YIELD();
-		//INTERRUPTS_DISABLE();
+		INTERRUPTS_DISABLE();
 		setup_before_resume();
 		
 
 		//rv3049_clear_int_flag();
 		//unsigned char leds_result = leds_get();
 		//if (leds_result & LEDS_RED) {
-		if (pir_motion) {
+		if (wakeevent == PIR_EV) {
 			schedule_vtimer(&pir_vtimer, 30*VTIMER_SECOND);
 			//leds_off(LEDS_RED);
-		//	pir_motion = 1;
-		} else {
+			pir_motion = 1;
+		} else if (wakeevent == PERIODIC_EV) {
 			rv3049_clear_int_flag();
+		} else {
+			leds_toggle(LEDS_RED); // error
 		}
 
 		// if PIR Motion PowerUp Int is disabled, increment reset value
@@ -324,7 +330,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		si1147_als_force_read(&als_data);
 		// printf("LIGHT: %d\n", als_data.vis.val);
 		//adc121c021_read_amplitude();
-		buf[0] = 0x02;
+		buf[0] = 0x01;
 		buf[1] = temp;
 		buf[2] = (temp & 0xFF00) >> 8;
 		buf[3] = rh;
@@ -336,6 +342,7 @@ PROCESS_THREAD(observer_lp_process, ev, data) {
 		buf[9] = (press & 0x00FF0000) >> 16;
 		buf[10] = pir_motion;
 		pir_motion = 0;
+		wakeevent = DEFAULTEV;
 		// buf[0] = 0x01;
 		// buf[1] = 0x02;
 		// buf[2] = 0x03;
@@ -539,9 +546,13 @@ static void periodic_vtimer() {
 void rtc_callback(uint8_t port, uint8_t pin) {
 	INTERRUPTS_DISABLE();
 
-	leds_toggle(LEDS_BLUE);
-	process_poll(&observer_lp_process);
+	if (wakeevent == DEFAULTEV) {
+		leds_toggle(LEDS_BLUE);
+		process_poll(&observer_lp_process);
+		wakeevent = PERIODIC_EV;
+	}
 
+	INTERRUPTS_ENABLE();
 	return;
 }
 
@@ -549,10 +560,14 @@ void amn41122_callback(uint8_t port, uint8_t pin) {
 	//leds_on(LEDS_RED);
 	INTERRUPTS_DISABLE();
 
-	pir_motion = 1;
- 	GPIO_DISABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
- 	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
-  	process_poll(&observer_lp_process);
+	//pir_motion = 1;
+	if (wakeevent == DEFAULTEV) {
+		wakeevent = PIR_EV;
+	 	GPIO_DISABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+	 	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+	  	process_poll(&observer_lp_process);
+	}
 
+  	INTERRUPTS_ENABLE();
 	return;
 }
