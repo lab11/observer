@@ -142,7 +142,7 @@
 
 void mpu9250_init();
 
-uint8_t mpu9250_readByte(uint8_t reg_addr);
+void mpu9250_readByte(uint8_t reg_addr, uint8_t *data);
 
 void mpu9250_writeByte(uint8_t reg_addr, uint8_t data);
 
@@ -167,7 +167,7 @@ int16_t mpu9250_readSensor(uint8_t reg_addrL, uint8_t reg_addrH);
 *	\param callback 		a callback function of type gpio_callback_t to be registered
 *							with the isr
 */
-void mpu9250_motion_nterrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency);
+void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency, gpio_callback_t accel_irq_handler);
 
 void temp_irq_handler(uint8_t port, uint8_t pin);
 //void accel_irq_handler(uint8_t port, uint8_t pin);

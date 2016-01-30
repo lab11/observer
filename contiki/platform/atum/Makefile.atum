@@ -6,11 +6,11 @@ ifndef CONTIKI
   $(error CONTIKI not defined! You must specify where CONTIKI resides!)
 endif
 
-CONTIKI_TARGET_DIRS = . dev ../../dev/fm25l04b ../../dev/rv3049 ../../dev/lps331ap ../../dev/mpu9250 ../../dev/si1147 ../../dev/amn41122 ../../dev/si7021 ../../dev/adc121c021 ../../dev/vtimer ../../dev/wakeevent
+CONTIKI_TARGET_DIRS = . dev ../../dev/fm25l04b ../../dev/rv3049 ../../dev/lps331ap ../../dev/mpu9250 ../../dev/si1147 ../../dev/amn41122 ../../dev/si7021 ../../dev/adc121c021 #../../dev/vtimer ../../dev/wakeevent
 
 CONTIKI_TARGET_SOURCEFILES += leds.c leds-arch.c
 CONTIKI_TARGET_SOURCEFILES += contiki-main.c
-CONTIKI_TARGET_SOURCEFILES += fm25l04b.c rv3049.c lps331ap.c mpu9250.c si1147.c amn41122.c si7021.c adc121c021.c vtimer.c wakeevent.c
+CONTIKI_TARGET_SOURCEFILES += fm25l04b.c rv3049.c lps331ap.c mpu9250.c si1147.c amn41122.c si7021.c adc121c021.c #vtimer.c wakeevent.c
 
 CONTIKI_SOURCEFILES += $(CONTIKI_TARGET_SOURCEFILES)
 

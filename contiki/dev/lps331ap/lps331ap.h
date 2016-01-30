@@ -113,6 +113,6 @@ int lps331ap_write(uint8_t address, uint16_t len, uint8_t * buf);
 uint32_t lps331ap_get_pressure();
 void lps331ap_power_up(void);
 void lps331ap_power_down(void);
-
+uint32_t lps331ap_one_shot(void);
 
 #endif /*LPS331AP_H*/
