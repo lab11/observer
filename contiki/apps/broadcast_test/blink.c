@@ -139,7 +139,10 @@ PROCESS_THREAD(cc2538_demo_process, ev, data)
 
   //etimer_set(&et, CLOCK_SECOND);
 
-    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
+    /*disable_unused_pins();
+
+    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6)); 
+    ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
     GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
     GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
 
@@ -152,7 +155,9 @@ PROCESS_THREAD(cc2538_demo_process, ev, data)
            I2C_SCL_FAST_BUS_SPEED);
     si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE); 
     si1147_als_data_t als_data;
-  
+  */
+    //mpu9250_init();
+    //mpu9250_motion_interrupt_init(20, 6, accel_callback);
     rtimer_set(&rt, RTIMER_NOW() + LEDS_OFF_HYSTERISIS, 1, rt_callback, NULL);
  
   while(1) {

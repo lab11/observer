@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "sys/timer.h"
 #include "dev/leds.h"
+#include "dev/ioc.h"
 #include "cpu/cc2538/dev/gpio.h"
 #include "cpu/cc2538/dev/i2c.h"
 #include "si1147.h"
@@ -130,7 +131,11 @@ void si1147_init(uint16_t meas_rate, uint8_t meas_enable) {
  //    else if (meas_enable == SI1147_PSALS_ENABLE)
  //      si1147_write_command(SI1147_COMMAND_PSALS_AUTO);
  //  }
-
+    
+    // enable pullup for interrupt
+    GPIO_SET_INPUT(GPIO_C_BASE, 0x04);
+    ioc_set_over(GPIO_C_NUM, 2, IOC_OVERRIDE_PUE);
+    
   return;
 }
 
