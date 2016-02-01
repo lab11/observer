@@ -86,7 +86,8 @@
 #include "mpu9250.h"
 #include "lps331ap.h"
 #include "si1147.h"
-#include "si7021.h"
+//#include "si7021.h"
+#include "amn41122.h"
 
 /*---------------------------------------------------------------------------*/
 #define LOOP_INTERVAL       CLOCK_SECOND
@@ -127,6 +128,10 @@ rt_callback(struct rtimer *t, void *ptr)
 void accel_callback(uint8_t port, uint8_t pin) {
     leds_toggle(LEDS_BLUE);
 }
+
+void pir_callback(uint8_t port, uint8_t pin) {
+    leds_toggle(LEDS_GREEN);
+}
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(cc2538_demo_process, ev, data)
 {
@@ -139,35 +144,47 @@ PROCESS_THREAD(cc2538_demo_process, ev, data)
 
   //etimer_set(&et, CLOCK_SECOND);
 
-    /*disable_unused_pins();
+    disable_unused_pins();
 
+    // mic pfet
     GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6)); 
     ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
     GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
     GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
 
+    // SPI CS for MPU and LPS
+    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(1));
+    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(3));
+    GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(1));
+    GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(3));
+    GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(1));
+    GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(3));
+
+    //amn41122_init();  
     lps331ap_init();
     mpu9250_init();
-    mpu9250_motion_interrupt_init(20, 7, accel_callback);
+    mpu9250_motion_interrupt_init(20, 6, accel_callback);
 
     i2c_init(GPIO_C_NUM, 5, // SDA
            GPIO_C_NUM, 4, // SCL
            I2C_SCL_FAST_BUS_SPEED);
+    
     si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE); 
     si1147_als_data_t als_data;
-  */
-    //mpu9250_init();
-    //mpu9250_motion_interrupt_init(20, 6, accel_callback);
+    //amn41122_irq_enable(pir_callback);
+    
     rtimer_set(&rt, RTIMER_NOW() + LEDS_OFF_HYSTERISIS, 1, rt_callback, NULL);
+
+
  
   while(1) {
 
     CC2538_RF_CSP_ISRFOFF();
 
 
-    //cleanup_before_sleep();
+    cleanup_before_sleep();
     PROCESS_YIELD();
-    //setup_before_wake();
+    setup_before_wake();
 
     //if(ev == PROCESS_EVENT_TIMER) {
       //leds_toggle(LEDS_PERIODIC);

@@ -133,9 +133,18 @@ void si1147_init(uint16_t meas_rate, uint8_t meas_enable) {
  //  }
     
     // enable pullup for interrupt
-    GPIO_SET_INPUT(GPIO_C_BASE, 0x04);
-    ioc_set_over(GPIO_C_NUM, 2, IOC_OVERRIDE_PUE);
-    
+    //GPIO_SOFTWARE_CONTROL(GPIO_C_BASE, 0x04);
+    //GPIO_SET_INPUT(GPIO_C_BASE, 0x04);
+    //ioc_set_over(GPIO_C_NUM, 2, IOC_OVERRIDE_PUE);
+   
+
+    // disable LEDS
+    si1147_write_reg(SI1147_PS_LED21, 0x00);
+    si1147_write_reg(SI1147_PS_LED3, 0x00);
+
+    si1147_read_reg(SI1147_PS_LED21);
+    si1147_read_reg(SI1147_PS_LED3);
+ 
   return;
 }
 
