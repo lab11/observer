@@ -21,7 +21,7 @@ void mpu9250_init() {
 	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
     // Clear sleep bit to start sensor
-    mpu9250_writeByte(MPU9250_PWR_MGMT_1, 0x80); //80
+    mpu9250_writeByte(MPU9250_PWR_MGMT_1, 0x00); //80
   
     // disable mpu9250 i2c
     //mpu9250_writeSensor(MPU9250_USER_CTRL, 0x10);
@@ -29,11 +29,160 @@ void mpu9250_init() {
     timer_set(&mpu9250_startup_timer, MPU9250_STARTUP_TIME);
     WAIT_WHILE(!timer_expired(&mpu9250_startup_timer));
 
+    // disable FSYNC; also sets gyro and temp filter?
+    mpu9250_writeByte(MPU9250_CONFIG, 0x03);
+
     // disable mpu9250 i2c
-    mpu9250_writeByte(MPU9250_USER_CTRL, 0x10);
+    //mpu9250_writeByte(MPU9250_USER_CTRL, 0x10);
 
     // ACCEL CONFIG
 	mpu9250_writeByte(MPU9250_ACCEL_CONFIG, 0x18);
+
+    // ext i2c bypass
+    //mpu9250_writeByte(MPU9250_INT_PIN_CFG, 0x02);
+
+}
+
+void ak8963_init(uint8_t mode) {
+    uint8_t calibration_data[3];
+
+    
+    // Enable MPU9250 internal I2C bus
+    mpu9250_writeByte(MPU9250_USER_CTRL, 0x20);
+
+    // Configure MPU9250 I2C frequency 400KHz
+    mpu9250_writeByte(MPU9250_I2C_MST_CTRL, 0x0D);
+
+    /* To Communicate with the built-in ak8963, you must use specific 
+     * "mailbox" registers to pass data to-and-from the mpu9250(master)
+     * to the ak8963(slave)
+     */
+
+    // set i2c address for write
+    //mpu9250_writeByte(MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR);
+    // write starting at cntl2 register to reset ak8963
+    //mpu9250_writeByte(MPU9250_I2C_SLV0_REG, AK8963_CNTL2);
+    // load the data we want to write
+    //mpu9250_writeByte(MPU9250_I2C_SLV0_DO, 0x01);
+    // do a write from the mpu9250
+    //mpu9250_writeByte(MPU9250_I2C_SLV0_CTRL, 0x81);
+
+    // reset the ak8963 in the mpu9250
+    ak8963_writeByte(AK8963_CNTL2, 0x01);
+    clock_delay_usec(50000);
+    
+    // Enter Fuse ROM Mode
+    ak8963_writeByte(AK8963_CNTL1, 0x0F);
+    clock_delay_usec(10000);
+
+    // Read the x,y,z calibration values
+    ak8963_readMultiple(AK8963_ASAX, 3, calibration_data);
+   
+    printf("calibration data: %d, %d, %d, %d, %d, %d", calibration_data[0], calibration_data[1], calibration_data[2]);
+ 
+    // Set the adjustment values
+    AK8963_ADJUST_X = (float)(calibration_data[0] - 128)/(256.0) + 1;
+    AK8963_ADJUST_Y = (float)(calibration_data[1] - 128)/(256.0) + 1;
+    AK8963_ADJUST_Z = (float)(calibration_data[2] - 128)/(256.0) + 1;
+    //AK8963_ADJUST_X = calibration_data[0];
+    //AK8963_ADJUST_Y = calibration_data[1];
+    //AK8963_ADJUST_Z = calibration_data[2];    
+
+    // Power down ak8963 (b/c we'll do single measurement mode for sampling)
+    ak8963_writeByte(AK8963_CNTL1, 0x10); // 0x10 is for 16 bit output
+    clock_delay_usec(10000);
+
+   /*
+    // set i2c address for write
+    mpu9250_writeByte(MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR);
+    // write starting at cntl1 register to change mode
+    mpu9250_writeByte(MPU9250_I2C_SLV0_REG, AK8963_CNTL1);
+    // load the data we want to write
+    mpu9250_writeByte(MPU9250_I2C_SLV0_DO, 0x00);
+    // do a write from the mpu9250
+    mpu9250_writeByte(MPU9250_I2C_SLV0_CTRL, 0x81);
+    clock_delay_usec(10000); // delay 10ms
+
+    mpu9250_writeByte(MPU9250_MAG_CNTRL1, 0x0F); // enter Fuse ROM mode
+    clock_delay_usec(10000);
+    mpu9250_readMultiple(MPU9250_MAG_ASAX, 3, calibration_data);
+    
+    MAG_ASAX = (float)(calibration_data[0] - 128)/(256.0) + 1;
+    MAG_ASAY = (float)(calibration_data[1] - 128)/(256.0) + 1;
+    MAG_ASAZ = (float)(calibration_data[2] - 128)/(256.0) + 1;
+    
+    mpu9250_writeByte(MPU9250_MAG_CNTRL1, 0x00); // power down mag
+
+    clock_delay_usec(10000);
+
+    mpu9250_writeByte(MPU9250_MAG_CNTRL1, 0x10 | mode);
+    clock_delay_usec(10000);
+*/
+}
+
+uint8_t ak8963_readWIA() {
+    uint8_t response = 23;    
+
+     /*** read device id ***/
+    // set slave0 address for a read
+    //mpu9250_writeByte(MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR | 0x80);
+    //uint8_t addr;
+    //mpu9250_readByte(MPU9250_I2C_SLV0_ADDR, &addr);
+    //printf("addr: %d\n", addr);
+ 
+    // actual register address to start reading from
+    //mpu9250_writeByte(MPU9250_I2C_SLV0_REG, AK8963_WIA);
+    //uint8_t reg;
+    //mpu9250_readByte(MPU9250_I2C_SLV0_REG, &reg);
+    //printf("reg: %d\n", reg);
+
+    // then signal an I2C read to the mpu9250 to read 1 byte
+    //mpu9250_writeByte(MPU9250_I2C_SLV0_CTRL, 0x81);
+    //clock_delay_usec(50000);
+    //clock_delay_usec(50000);
+    //uint8_t signal;
+    //mpu9250_readByte(MPU9250_I2C_SLV0_CTRL, &signal);    
+    //printf("signal: %d\n", signal);
+
+    // then read the result from the mpu9250 "mailbox" reg
+    //mpu9250_readByte(MPU9250_EXT_SENS_DATA_00, &response);
+
+    ak8963_readByte(AK8963_WIA, &response);
+
+    printf("id: %d\n", response);
+    return response;
+
+}
+
+void ak8963_readByte(uint8_t reg_addr, uint8_t *data) {
+    // set i2c address for read
+    mpu9250_writeByte(MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR|0x80);
+    // read starting at reg_addr register address
+    mpu9250_writeByte(MPU9250_I2C_SLV0_REG, reg_addr);
+    // send the read command from mpu9250
+    mpu9250_writeByte(MPU9250_I2C_SLV0_CTRL, 0x81);
+    clock_delay_usec(50000); // delay 10ms
+
+    // then read result from the "mailbox" reg
+    mpu9250_readByte(MPU9250_EXT_SENS_DATA_00, data);
+
+    return;
+}
+
+
+// len must be <= 24 as there are only  mpu9250 "mailbox" registers
+// to return respones from the ak8963
+void ak8963_readMultiple(uint8_t reg_addr, uint8_t len, uint8_t *data) {
+    // set i2c address for read
+    mpu9250_writeByte(MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR|0x80);
+    // read starting at reg_addr register address
+    mpu9250_writeByte(MPU9250_I2C_SLV0_REG, reg_addr);
+    // send the read command from mpu9250
+    mpu9250_writeByte(MPU9250_I2C_SLV0_CTRL, 0x80 | len);
+    clock_delay_usec(50000); // delay 10ms
+
+    // then read result from the "mailbox" reg
+    mpu9250_readMultiple(MPU9250_EXT_SENS_DATA_00, len, data);
 
 }
 
@@ -42,6 +191,7 @@ void mpu9250_readByte(uint8_t reg_addr, uint8_t *data) {
 	reg_addr |= MPU9250_READ_MASK;
 
 	spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+    //spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, 0, SSI_CR0_SPH, 8);
 
 	SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
 	SPI_WRITE(reg_addr);
@@ -50,6 +200,39 @@ void mpu9250_readByte(uint8_t reg_addr, uint8_t *data) {
 	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
 	return;
+}
+
+void mpu9250_readMultiple(uint8_t reg_addr, uint16_t len, uint8_t *data) {
+    uint16_t i;
+    
+    reg_addr |= MPU9250_READ_MASK;
+
+    spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+
+    SPI_CS_CLR(MPU9250_CS_PORT, MPU9250_CS_PIN);
+    SPI_WRITE(reg_addr);
+
+    SPI_FLUSH();
+    for(i = 0; i < len; ++i) {
+        SPI_READ(data[i]);
+    }
+
+    SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
+}
+
+void ak8963_writeByte(uint8_t reg_addr, uint8_t data) {
+    
+     // set i2c address for write
+    mpu9250_writeByte(MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR);
+    // write starting at reg_addr register address
+    mpu9250_writeByte(MPU9250_I2C_SLV0_REG, reg_addr);
+    // load the data we want to write
+    mpu9250_writeByte(MPU9250_I2C_SLV0_DO, data);
+    // do a write of 1byte from the mpu9250
+    mpu9250_writeByte(MPU9250_I2C_SLV0_CTRL, 0x81);
+    clock_delay_usec(10000); // delay 10ms
+
+
 }
 
 void mpu9250_writeByte(uint8_t reg_addr, uint8_t data) {
@@ -91,7 +274,66 @@ int16_t mpu9250_readSensor(uint8_t reg_addrL, uint8_t reg_addrH) {
   return val;
 }
 
+int8_t ak8963_read_Mag(uint8_t *data) {
+    uint8_t response[7];
+    uint8_t dataReady;
+    uint8_t dataReady_tries = 0;
+    uint8_t status2;
+    uint8_t i;
 
+    // Currently in power-down mode "0000", must change to Single Measurement
+    // Mode to take a sample
+    ak8963_writeByte(AK8963_CNTL1, 0x11); // 0b0001 0001 for 16 bit single meas
+    clock_delay_usec(10000); // 9ms max required for single measure
+    
+    // Now check to see if data is ready
+    do {
+        ak8963_readByte(AK8963_ST1, &dataReady);
+        dataReady_tries++;
+    } while( !(dataReady & 0x01) && dataReady_tries < 10);
+
+    if (dataReady_tries >= 10) {
+        return -1; // failed to read in timely manner
+    }
+
+    // Now read all 3 axis (6 regs) plus the status2 reg
+    ak8963_readMultiple(AK8963_HXL, 7, response);
+    printf("responses: %x, %x, %x, %x, %x, %x\n", response[0], response[1], response[2], response[3], response[4], response[5]);
+    
+    // check to see that data 
+    if (!(status2 & 0x08)) {
+        for(i=0; i < 6; i++) {
+            *(data+i) = *(response+i);
+        }
+        return 0; // data is good
+    } else {
+        return -2; // data is bad, overflow   
+    }
+}
+
+/*int16_t mpu9250_readMagX() {
+    uint8_t dataReady_tries = 0;
+    uint8_t dataReady;
+    
+    uint8_t status2;
+    uint8_t magX[2];
+
+    do { 
+        mpu9250_readByte(MPU9250_MAG_STATUS1, &dataReady);
+        dataReady_tries++;
+    } while( ((dataReady & 0x01) != 0x01) && dataReady_tries < 256);
+
+    mpu9250_readMultiple(MPU9250_MAG_XOUT_L, 2, magX); // read meas data
+    mpu9250_readByte(MPU9250_MAG_STATUS2, &status2); // read to end
+    
+    if (!(status2 & 0x08)) {
+        return (int16_t)(((uint16_t)magX[1] << 8) | magX[0]);
+    } else {
+        return 0x0000;
+    }
+
+}
+*/
 void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency, gpio_callback_t accel_irq_handler) {
 	// Ensure Accel is running
 	uint8_t PWR_MGMT_2_reg;

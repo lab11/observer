@@ -3,7 +3,7 @@
 
 #define MPU9250_DBG 1
 
-#define MPU9250_STARTUP_TIME 0.035*CLOCK_SECOND
+#define MPU9250_STARTUP_TIME 0.1*CLOCK_SECOND
 
 // I2C address 0x69 could be 0x68 depends on your wiring.
 #define MPU9250_I2C_ADDRESS  0x69;
@@ -127,12 +127,30 @@
 #define MPU9250_ZA_OFFSET_L        0x7E   // R/W
 
 //MPU9250 Compass ? copied from MPU9150 so can't guarantee this to work
-#define MPU9250_CMPS_XOUT_L        0x4A   // R
-#define MPU9250_CMPS_XOUT_H        0x4B   // R
-#define MPU9250_CMPS_YOUT_L        0x4C   // R
-#define MPU9250_CMPS_YOUT_H        0x4D   // R
-#define MPU9250_CMPS_ZOUT_L        0x4E   // R
-#define MPU9250_CMPS_ZOUT_H        0x4F   // R
+#define AK8963_I2C_ADDR      0x0C
+#define AK8963_DEVICE_ID     0x48
+#define AK8963_WRITE_MASK    0x00
+#define AK8963_READ_MASK     0x01
+
+#define AK8963_WIA           0x00
+#define AK8963_INFO          0x01
+#define AK8963_ST1           0x02
+#define AK8963_HXL           0x03   // R
+#define AK8963_HXH           0x04   // R
+#define AK8963_HYL           0x05   // R
+#define AK8963_HYH           0x06   // R
+#define AK8963_HZL           0x07   // R
+#define AK8963_HZH           0x08   // R
+#define AK8963_ST2           0x09   // R
+#define AK8963_CNTL1         0x0A   // R/W
+#define AK8963_CNTL2         0x0B
+#define AK8963_ASTC          0x0C
+#define AK8963_TS1           0x0D
+#define AK8963_TS2           0x0E
+#define AK8963_I2CDIS        0x0F
+#define AK8963_ASAX          0x10
+#define AK8963_ASAY          0x11
+#define AK8963_ASAZ          0x12
 
 #define WAIT_WHILE(cond) \
   do { \
@@ -140,11 +158,23 @@
     while(cond) i++; \
   } while(0)
 
+float AK8963_ADJUST_X;
+float AK8963_ADJUST_Y;
+float AK8963_ADJUST_Z;
+//uint8_t AK8963_ADJUST_X, AK8963_ADJUST_Y; AK8963_ADJUST_Z;
+
 void mpu9250_init();
 
+void ak8963_init(uint8_t mode);
+
 void mpu9250_readByte(uint8_t reg_addr, uint8_t *data);
+void ak8963_readByte(uint8_t reg_addr, uint8_t *data);
+
+void mpu9250_readMultiple(uint8_t reg_addr, uint16_t len, uint8_t *data);
+void ak8963_readMultiple(uint8_t reg_addr, uint8_t len, uint8_t *data);
 
 void mpu9250_writeByte(uint8_t reg_addr, uint8_t data);
+void ak8963_writeByte(uint8_t reg_addr, uint8_t data);
 
 // writes data to register reg_addr
 void mpu9250_writeSensor(uint8_t reg_addr, uint8_t data);
@@ -155,6 +185,9 @@ void mpu9250_writeSensor(uint8_t reg_addr, uint8_t data);
 *  of the register you want to read to the slave then read from slave device
 */
 int16_t mpu9250_readSensor(uint8_t reg_addrL, uint8_t reg_addrH);
+
+uint8_t ak8963_readWIA();
+int8_t ak8963_read_Mag(uint8_t *data);
 
 /*	
 *	\brief		Enables Wake-On-Motion Interrupt

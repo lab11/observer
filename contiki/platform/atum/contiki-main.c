@@ -97,6 +97,7 @@ main(void)
   clock_init();
   lpm_init();
   rtimer_init();
+  //vtimer_init();
   gpio_init();
 
   leds_init();
