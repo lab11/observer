@@ -1,0 +1,70 @@
+#include "cpu.h"
+#include "cpu/cc2538/dev/gpio.h"
+#include "cpu/cc2538/spi-arch.h"
+#include "board.h"
+
+void disable_unused_pins() {
+    uint8_t pin_mask_A = 0xFF; // ADC7|ADC6|ADC5|ADC4|ADC3|BTLDRCTRL|BTLDRTX|BTLDRRX
+#if UART_CONF_ENABLE
+    pin_maskA = 0xFC;
+#endif
+    GPIO_SOFTWARE_CONTROL(GPIO_A_BASE, pin_mask_A);
+    GPIO_SET_OUTPUT(GPIO_A_BASE, pin_mask_A);
+    GPIO_CLR_PIN(GPIO_A_BASE, pin_mask_A);
+
+    uint8_t pin_mask_B = 0x80; // JTAG|ADCPFET|PIR|ACCELINT|ACCELCS|RTCINT|RTCCE|SPIMISO
+    GPIO_SOFTWARE_CONTROL(GPIO_B_BASE, pin_mask_B);
+    GPIO_SET_OUTPUT(GPIO_B_BASE, pin_mask_B);
+    GPIO_CLR_PIN(GPIO_B_BASE, pin_mask_B);
+
+    uint8_t pin_mask_C = 0x09; // SPIMOSI|SPISCLK|I2CSDA|I2CSCL|X|LITEINT|PRESCS|PRESINT
+    GPIO_SOFTWARE_CONTROL(GPIO_C_BASE, pin_mask_C);
+    GPIO_SET_OUTPUT(GPIO_C_BASE, pin_mask_C);
+    GPIO_CLR_PIN(GPIO_C_BASE, pin_mask_C);
+
+    uint8_t pin_mask_D = 0x00; // XTAL|XTAL|LEDG|LEDB|LEDR|FRAMWP|FRAMCS|FRAMHOLD
+    GPIO_SOFTWARE_CONTROL(GPIO_D_BASE, pin_mask_D);
+    GPIO_SET_OUTPUT(GPIO_D_BASE, pin_mask_D);
+    GPIO_CLR_PIN(GPIO_D_BASE, pin_mask_D);
+
+
+    ioc_set_over(GPIO_A_NUM, 0, IOC_OVERRIDE_DIS);
+    ioc_set_over(GPIO_A_NUM, 1, IOC_OVERRIDE_DIS);
+    ioc_set_over(GPIO_A_NUM, 2, IOC_OVERRIDE_DIS);
+    ioc_set_over(GPIO_A_NUM, 3, IOC_OVERRIDE_DIS);
+    ioc_set_over(GPIO_A_NUM, 4, IOC_OVERRIDE_DIS);
+    ioc_set_over(GPIO_A_NUM, 5, IOC_OVERRIDE_DIS);
+    ioc_set_over(GPIO_A_NUM, 6, IOC_OVERRIDE_DIS);
+    ioc_set_over(GPIO_A_NUM, 7, IOC_OVERRIDE_DIS);
+
+    ioc_set_over(GPIO_B_NUM, 7, IOC_OVERRIDE_DIS);
+
+    ioc_set_over(GPIO_C_NUM, 3, IOC_OVERRIDE_DIS);
+    ioc_set_over(GPIO_C_NUM, 0, IOC_OVERRIDE_DIS);
+}
+
+void cleanup_before_sleep() {
+    spix_disable(0);
+
+    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(6));
+    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(7));
+    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(SPI0_RX_PORT), GPIO_PIN_MASK(SPI0_RX_PIN));
+    GPIO_SET_OUTPUT(GPIO_C_BASE, 0x80);
+    GPIO_CLR_PIN(GPIO_C_BASE, 0x80);
+    GPIO_SET_OUTPUT(GPIO_C_BASE, 0x40);
+    GPIO_SET_PIN(GPIO_C_BASE, 0x40);
+    GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(SPI0_RX_PORT), GPIO_PIN_MASK(SPI0_RX_PIN));
+    GPIO_CLR_PIN(GPIO_PORT_TO_BASE(SPI0_RX_PORT), GPIO_PIN_MASK(SPI0_RX_PIN));
+
+    i2c_master_disable();
+}
+
+void setup_before_wake() {
+    spix_enable(0);
+    GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(6));
+    GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(7));
+
+    GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(SPI0_RX_PORT), GPIO_PIN_MASK(SPI0_RX_PIN));
+
+    i2c_master_enable();
+}
