@@ -78,11 +78,13 @@
 #include "net/rime/broadcast.h"
 #include "netstack.h"
 #include "cpu/cc2538/dev/i2c.h"
+#include "dev/cc2538-rf.h"
 
-#include "power_manage.h"
+#include "power_manage2.h"
 #include "lps331ap.h"
 #include "mpu9250.h"
 #include "si1147.h"
+#include "rv3049.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -100,6 +102,7 @@ static struct etimer et;
 static struct rtimer rt;
 static struct rtimer rtc_rtimer;
 static uint16_t counter;
+
 /*---------------------------------------------------------------------------*/
 PROCESS(rtc_process, "rtc process");
 AUTOSTART_PROCESSES(&rtc_process);
@@ -145,41 +148,57 @@ PROCESS_THREAD(rtc_process, ev, data)
 
 	disable_unused_pins();
 
-	i2c_init(GPIO_C_NUM, 5, GPIO_C_NUM, 4, I2C_SCL_FAST_BUS_SPEED);
+	//i2c_init(GPIO_C_NUM, 5, GPIO_C_NUM, 4, I2C_SCL_FAST_BUS_SPEED);
 	
 
 	// mic pfet
-    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
+    /*GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
     ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
     GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
     GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
+*/
+	//lps331ap_init();
+	//mpu9250_init();	
+	//mpu9250_motion_interrupt_init(20, 6);
+	//mpu9250_interrupt_enable(accel_irq_handler);
+	//si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 
-	lps331ap_init();
-	mpu9250_init();	
-	mpu9250_motion_interrupt_init(20, 6);
-	mpu9250_interrupt_enable(accel_irq_handler);
-	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
+	/*timer_set(&t, CLOCK_SECOND*3);
+    do {
+        volatile uint8_t i=0;
+        while(!timer_expired(&t)) i++;
+    } while(0) ;
+		
 
+	static rv3049_time_t alarm_time;
+	rv3049_read_time(&alarm_time);*/
 
   	//etimer_set(&et, CLOCK_SECOND);
 	rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*2, 1, 						rtc_callback, NULL);	
 
   	while(1) {
 		//cleanup_before_sleep();
+		//i2c_master_disable();
     	PROCESS_YIELD();
+		//i2c_master_enable();
 		//setup_before_wake();
 		
 		//etimer_reset(&et);
 		rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*8, 1, 						rtc_callback, NULL);
 
 		counter++;
+		leds_toggle(LEDS_GREEN);
 
-		NETSTACK_MAC.on();
+		//lps331ap_one_shot();
+
+		CC2538_RF_CSP_ISTXON();
+		//NETSTACK_MAC.on();
 		broadcast_open(&bc, BROADCAST_CHANNEL, &bc_rx);
 		packetbuf_copyfrom(&counter, sizeof(counter));
 		broadcast_send(&bc);
 		broadcast_close(&bc);
-		NETSTACK_MAC.off(0);
+		//NETSTACK_MAC.off(0);
+		CC2538_RF_CSP_ISRFOFF();
 	
 		//leds_toggle(LEDS_RED);
 
