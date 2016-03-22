@@ -178,9 +178,9 @@ PROCESS_THREAD(rtc_process, ev, data)
 
 	static rv3049_time_t alarm_time;
 	rv3049_read_time(&alarm_time);
-	//alarm_time.seconds = 0;
-	//rv3049_set_alarm(&alarm_time, 0x01);
-    //rv3049_interrupt_enable(rtc_callback);
+	alarm_time.seconds = 0;
+	rv3049_set_alarm(&alarm_time, 0x01);
+    rv3049_interrupt_enable(rtc_callback);
 
   	//etimer_set(&et, CLOCK_SECOND);
 	rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*2, 1, 						rt_callback, NULL);	
