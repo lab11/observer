@@ -107,7 +107,8 @@ static uint8_t rtc_ya = 0;
 
 /*---------------------------------------------------------------------------*/
 PROCESS(rtc_process, "rtc process");
-AUTOSTART_PROCESSES(&rtc_process);
+PROCESS(accel_process, "accel process");
+AUTOSTART_PROCESSES(&rtc_process, &accel_process);
 /*---------------------------------------------------------------------------*/
 static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
@@ -251,9 +252,21 @@ PROCESS_THREAD(rtc_process, ev, data)
 
         */
         
-	  }
+	}
 
-	  PROCESS_END();
+	PROCESS_END();
+}
+
+PROCESS_THREAD(accel_process, ev, data) {
+
+	PROCESS_BEGIN();
+
+	while(1) {
+		PROCESS_YIELD();
+
+	}
+
+	PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
 /**
