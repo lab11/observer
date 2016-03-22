@@ -98,10 +98,12 @@
 #define LEDS_RF_RX          (LEDS_BLUE | LEDS_GREEN)
 #define BROADCAST_CHANNEL   129
 /*---------------------------------------------------------------------------*/
+static struct timer  t;
 static struct etimer et;
 static struct rtimer rt;
 static struct rtimer rtc_rtimer;
 static uint16_t counter;
+static uint8_t rtc_ya = 0;
 
 /*---------------------------------------------------------------------------*/
 PROCESS(rtc_process, "rtc process");
@@ -121,13 +123,17 @@ static struct broadcast_conn bc;
 void
 rt_callback(struct rtimer *t, void *ptr)
 {
-  leds_off(LEDS_PERIODIC);
+  //leds_off(LEDS_PERIODIC);
+	process_poll(&rtc_process);
+	leds_toggle(LEDS_GREEN);
 }
 
 void
 rtc_callback(struct rtimer *t, void *ptr)
 {
+	rtc_ya = 1;
 	process_poll(&rtc_process);
+	leds_toggle(LEDS_BLUE);
 }
 
 void
@@ -163,7 +169,7 @@ PROCESS_THREAD(rtc_process, ev, data)
 	//mpu9250_interrupt_enable(accel_irq_handler);
 	//si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 
-	/*timer_set(&t, CLOCK_SECOND*3);
+	timer_set(&t, CLOCK_SECOND*3);
     do {
         volatile uint8_t i=0;
         while(!timer_expired(&t)) i++;
@@ -171,10 +177,13 @@ PROCESS_THREAD(rtc_process, ev, data)
 		
 
 	static rv3049_time_t alarm_time;
-	rv3049_read_time(&alarm_time);*/
+	rv3049_read_time(&alarm_time);
+	//alarm_time.seconds = 0;
+	//rv3049_set_alarm(&alarm_time, 0x01);
+    //rv3049_interrupt_enable(rtc_callback);
 
   	//etimer_set(&et, CLOCK_SECOND);
-	rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*2, 1, 						rtc_callback, NULL);	
+	rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*2, 1, 						rt_callback, NULL);	
 
   	while(1) {
 		//cleanup_before_sleep();
@@ -184,10 +193,14 @@ PROCESS_THREAD(rtc_process, ev, data)
 		//setup_before_wake();
 		
 		//etimer_reset(&et);
-		rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*8, 1, 						rtc_callback, NULL);
-
+		if (rtc_ya) {
+			rv3049_clear_int_flag();
+			rtc_ya = 0;
+		} else {
+			rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*8, 1, 						rt_callback, NULL);
+		}
 		counter++;
-		leds_toggle(LEDS_GREEN);
+		//leds_toggle(LEDS_GREEN);
 
 		//lps331ap_one_shot();
 
