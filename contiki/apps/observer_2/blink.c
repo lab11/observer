@@ -140,7 +140,9 @@ rtc_callback(struct rtimer *t, void *ptr)
 void
 accel_irq_handler(uint8_t port, uint8_t pin)
 {
-	leds_toggle(LEDS_BLUE);
+	//leds_toggle(LEDS_BLUE);
+	process_poll(&accel_process);
+	//leds_toggle(LEDS_ALL);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -180,6 +182,7 @@ PROCESS_THREAD(rtc_process, ev, data)
 	static rv3049_time_t alarm_time;
 	rv3049_read_time(&alarm_time);
 	alarm_time.seconds = 0;
+	rv3049_clear_int_flag(); //in case rtc wasn't powered off and alarm fired
 	rv3049_set_alarm(&alarm_time, 0x01);
     rv3049_interrupt_enable(rtc_callback);
 
@@ -263,6 +266,7 @@ PROCESS_THREAD(accel_process, ev, data) {
 
 	while(1) {
 		PROCESS_YIELD();
+		leds_toggle(LEDS_ALL);
 
 	}
 
