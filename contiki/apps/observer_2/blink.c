@@ -140,8 +140,8 @@ rtc_callback(struct rtimer *t, void *ptr)
 void
 accel_irq_handler(uint8_t port, uint8_t pin)
 {
-	//leds_toggle(LEDS_BLUE);
-	process_poll(&accel_process);
+	leds_toggle(LEDS_BLUE);
+	//process_poll(&accel_process);
 	//leds_toggle(LEDS_ALL);
 }
 
@@ -157,20 +157,20 @@ PROCESS_THREAD(rtc_process, ev, data)
 
 	disable_unused_pins();
 
-	//i2c_init(GPIO_C_NUM, 5, GPIO_C_NUM, 4, I2C_SCL_FAST_BUS_SPEED);
+	i2c_init(GPIO_C_NUM, 5, GPIO_C_NUM, 4, I2C_SCL_FAST_BUS_SPEED);
 	
 
 	// mic pfet
-    /*GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
+    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
     ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
     GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
     GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
-*/
-	//lps331ap_init();
-	//mpu9250_init();	
-	//mpu9250_motion_interrupt_init(20, 6);
-	//mpu9250_interrupt_enable(accel_irq_handler);
-	//si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
+
+	lps331ap_init();
+	mpu9250_init();	
+	mpu9250_motion_interrupt_init(0x7F, 6);
+	mpu9250_interrupt_enable(accel_irq_handler);
+	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 
 	timer_set(&t, CLOCK_SECOND*3);
     do {
@@ -179,22 +179,25 @@ PROCESS_THREAD(rtc_process, ev, data)
     } while(0) ;
 		
 
-	static rv3049_time_t alarm_time;
-	rv3049_read_time(&alarm_time);
-	alarm_time.seconds = 0;
-	rv3049_clear_int_flag(); //in case rtc wasn't powered off and alarm fired
-	rv3049_set_alarm(&alarm_time, 0x01);
-    rv3049_interrupt_enable(rtc_callback);
+	//static rv3049_time_t alarm_time;
+	//rv3049_read_time(&alarm_time);
+	//alarm_time.seconds = 0;
+	//rv3049_clear_int_flag(); //in case rtc wasn't powered off and alarm fired
+	//rv3049_set_alarm(&alarm_time, 0x01);
+    //rv3049_interrupt_enable(rtc_callback);
 
   	//etimer_set(&et, CLOCK_SECOND);
 	rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*2, 1, 						rt_callback, NULL);	
 
   	while(1) {
-		//cleanup_before_sleep();
+		//spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+		// arbitrary write to get spi periph into above mode	
+		//SPI_WRITE(0x01);
+		cleanup_before_sleep();
 		//i2c_master_disable();
     	PROCESS_YIELD();
 		//i2c_master_enable();
-		//setup_before_wake();
+		setup_before_wake();
 		
 		//etimer_reset(&et);
 		if (rtc_ya) {

@@ -1,14 +1,15 @@
 #include "cpu.h"
 #include "cpu/cc2538/dev/gpio.h"
 #include "cpu/cc2538/spi-arch.h"
+#include "core/dev/spi.h"
 #include "board.h"
 
-#define ACCEL_CONNECTED 0
-#define PRESS_CONNECTED	0
-#define LIGHT_CONNECTED	0
+#define ACCEL_CONNECTED 1
+#define PRESS_CONNECTED 1
+#define LIGHT_CONNECTED	1
 #define TEMP_CONNECTED	0
 #define PIR_CONNECTED	0
-#define MIC_CONNECTED	0
+#define MIC_CONNECTED	1
 
 void disable_unused_pins() {
     uint8_t pin_mask_A = 0xFF; // ADC7|ADC6|ADC5|ADC4|ADC3|BTLDRCTRL|BTLDRTX|BTLDRRX
@@ -98,27 +99,30 @@ void disable_unused_pins() {
 }
 
 void cleanup_before_sleep() {
+	//spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
+	// arbitrary write to get spi periph into above mode	
+	//SPI_WRITE(0x01);
     spix_disable(0);
 
-    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(6));
+    //GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(6));
     GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(7));
     GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(SPI0_RX_PORT), GPIO_PIN_MASK(SPI0_RX_PIN));
     GPIO_SET_OUTPUT(GPIO_C_BASE, 0x80);
     GPIO_CLR_PIN(GPIO_C_BASE, 0x80);
-    GPIO_SET_OUTPUT(GPIO_C_BASE, 0x40);
-    GPIO_SET_PIN(GPIO_C_BASE, 0x40);
+    //GPIO_SET_OUTPUT(GPIO_C_BASE, 0x40);
+    //GPIO_SET_PIN(GPIO_C_BASE, 0x40);
     GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(SPI0_RX_PORT), GPIO_PIN_MASK(SPI0_RX_PIN));
     GPIO_CLR_PIN(GPIO_PORT_TO_BASE(SPI0_RX_PORT), GPIO_PIN_MASK(SPI0_RX_PIN));
 
-    i2c_master_disable();
+    //i2c_master_disable();
 }
 
 void setup_before_wake() {
     spix_enable(0);
-    GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(6));
+    //GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(6));
     GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(7));
 
     GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(SPI0_RX_PORT), GPIO_PIN_MASK(SPI0_RX_PIN));
 
-    i2c_master_enable();
+    //i2c_master_enable();
 }

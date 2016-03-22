@@ -200,7 +200,8 @@ int8_t ak8963_read_Mag(uint8_t *data);
 *	\param callback 		a callback function of type gpio_callback_t to be registered
 *							with the isr
 */
-void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency, gpio_callback_t accel_irq_handler);
+void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency);
+void mpu9250_interrupt_enable(gpio_callback_t accel_irq_handler);
 
 void temp_irq_handler(uint8_t port, uint8_t pin);
 //void accel_irq_handler(uint8_t port, uint8_t pin);
