@@ -35,7 +35,7 @@ void disable_unused_pins() {
     GPIO_SET_OUTPUT(GPIO_B_BASE, pin_mask_B);
     GPIO_CLR_PIN(GPIO_B_BASE, pin_mask_B);
 
-/*
+
 
     uint8_t pin_mask_C = 0x0F; // SPIMOSI|SPISCLK|I2CSDA|I2CSCL|X|LITEINT|PRESCS|PRESINT
 #if LIGHT_CONNECTED
@@ -54,7 +54,7 @@ void disable_unused_pins() {
     GPIO_SOFTWARE_CONTROL(GPIO_D_BASE, pin_mask_D);
     GPIO_SET_OUTPUT(GPIO_D_BASE, pin_mask_D);
     GPIO_CLR_PIN(GPIO_D_BASE, pin_mask_D);
-*/
+
 
 // ***************** GPIO_A_NUM **********************
 //#if UART_CONF_ENABLE
@@ -82,7 +82,7 @@ void disable_unused_pins() {
 #endif
 	ioc_set_over(GPIO_B_NUM, 7, IOC_OVERRIDE_DIS);
 
-/*
+
 // ***************** GPIO_C_NUM *********************
 #if !LIGHT_CONNECTED
 	ioc_set_over(GPIO_C_NUM, 2, IOC_OVERRIDE_DIS);
@@ -92,6 +92,7 @@ void disable_unused_pins() {
 	ioc_set_over(GPIO_C_NUM, 1, IOC_OVERRIDE_DIS);
 #endif
     ioc_set_over(GPIO_C_NUM, 3, IOC_OVERRIDE_DIS);
+/*
 */
 
 }
