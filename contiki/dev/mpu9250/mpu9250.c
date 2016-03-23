@@ -341,6 +341,14 @@ int8_t ak8963_read_Mag(uint8_t *data) {
 
 }
 */
+
+// when INT pin is latched and ANYRD_2CLEAR is 0, must read
+// INT_STATUS reg to clear pin
+void mpu9250_int_clear() {
+	uint8_t data;
+	mpu9250_readByte(MPU9250_INT_STATUS, &data);
+}
+
 void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency) {
 	// Ensure Accel is running
 	uint8_t PWR_MGMT_2_reg;
@@ -390,9 +398,10 @@ void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequen
 	PWR_MGMT_1_reg |= 0x20;
 	mpu9250_writeByte(MPU9250_PWR_MGMT_1, PWR_MGMT_1_reg); // 0x6B
 
-	//uint8_t INT_PIN_CFG_reg = mpu9250_readByte(MPU9250_INT_PIN_CFG);
-	//INT_PIN_CFG_reg |= 0x20; // interrupt latch enable
-	//mpu9250_writeSensor(MPU9250_INT_PIN_CFG, INT_PIN_CFG_reg);
+	uint8_t INT_PIN_CFG_reg;
+	mpu9250_readByte(MPU9250_INT_PIN_CFG, &INT_PIN_CFG_reg);
+	INT_PIN_CFG_reg |= 0x20; // interrupt latch enable
+	mpu9250_writeSensor(MPU9250_INT_PIN_CFG, INT_PIN_CFG_reg);
 
 	//timer_set(&accel_int_timer, 0.1*CLOCK_SECOND);
 

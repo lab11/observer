@@ -191,6 +191,9 @@ int16_t mpu9250_readSensor(uint8_t reg_addrL, uint8_t reg_addrH);
 uint8_t ak8963_readWIA();
 int8_t ak8963_read_Mag(uint8_t *data);
 
+
+void mpu9250_int_clear();
+
 /*	
 *	\brief		Enables Wake-On-Motion Interrupt
 *				To be called immediately after mpu9250_init()

@@ -84,6 +84,7 @@
 #include "lps331ap.h"
 #include "mpu9250.h"
 #include "si1147.h"
+#include "si7021.h"
 #include "rv3049.h"
 
 #include <stdio.h>
@@ -144,7 +145,7 @@ void
 accel_irq_handler(uint8_t port, uint8_t pin)
 {
 	leds_toggle(LEDS_BLUE);
-	//process_poll(&accel_process);
+	process_poll(&accel_process);
 	//leds_toggle(LEDS_ALL);
 }
 
@@ -279,8 +280,14 @@ PROCESS_THREAD(accel_process, ev, data) {
 	PROCESS_BEGIN();
 
 	while(1) {
+		
 		PROCESS_YIELD();
-		leds_toggle(LEDS_ALL);
+		setup_before_wake();
+
+		mpu9250_int_clear();
+
+		cleanup_before_sleep();
+		//leds_toggle(LEDS_ALL);
 
 	}
 
