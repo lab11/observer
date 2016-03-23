@@ -105,9 +105,12 @@ static struct etimer et;
 static struct rtimer rt;
 static struct rtimer rtc_rtimer;
 static uint16_t counter;
-static uint8_t buf[4];
+static uint8_t buf[11];
 static uint8_t rtc_ya = 0;
-static uint32_t press_val;
+static uint32_t press;
+static uint16_t temp;
+static uint16_t rh;
+static si1147_als_data_t als_data;
 static uint8_t mpuwai;
 static uint8_t ak8963wia;
 
@@ -175,7 +178,7 @@ PROCESS_THREAD(rtc_process, ev, data)
 	lps331ap_init();
 	mpu9250_init();	
 	mpu9250_motion_interrupt_init(0x7F, 6);
-	mpu9250_interrupt_enable(accel_irq_handler);
+	//mpu9250_interrupt_enable(accel_irq_handler);
 	//ak8963_init(0x06);
 	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 	amn41122_init();
@@ -214,27 +217,37 @@ PROCESS_THREAD(rtc_process, ev, data)
 			rv3049_clear_int_flag();
 			rtc_ya = 0;
 		} else {
-			rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*8, 1, 						rt_callback, NULL);
+			//rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*8, 1, 						rt_callback, NULL);
 		}
 		counter++;
 		//leds_toggle(LEDS_GREEN);
 
-		press_val = lps331ap_one_shot();
+		press = lps331ap_one_shot();
+		temp = si7021_readTemp(TEMP_NOHOLD);
+		rh = si7021_readHumd(RH_NOHOLD);
+		si1147_als_force_read(&als_data);
 		mpuwai = mpu9250_readWAI();
 		//ak8963wia = ak8963_readWIA();
 
 		//buf[0] = (press_val & 0x000000FF);
 		//buf[1] = (press_val & 0x0000FF00) >> 8;
 		//buf[2] = (press_val & 0x00FF0000) >> 16; 
-		buf[0] = 1;
-		buf[1] = 2;
-		buf[2] = 3;
-		buf[3] = mpuwai;
+		buf[0] = 0x01;
+		buf[1] = temp;
+		buf[2] = (temp & 0xFF00) >> 8;
+		buf[3] = rh;
+		buf[4] = (rh & 0xFF00) >> 8;
+		buf[5] = als_data.vis.b.lo;
+		buf[6] = als_data.vis.b.hi;
+		buf[7] = press & 0x000000FF;
+		buf[8] = (press & 0x0000FF00) >> 8;
+		buf[9] = (press & 0x00FF0000) >> 16;
+		buf[10] = 0x99;
 
 		CC2538_RF_CSP_ISTXON();
 		//NETSTACK_MAC.on();
 		broadcast_open(&bc, BROADCAST_CHANNEL, &bc_rx);
-		packetbuf_copyfrom(buf, 4);
+		packetbuf_copyfrom(buf, 11);
 		broadcast_send(&bc);
 		broadcast_close(&bc);
 		//NETSTACK_MAC.off(0);
