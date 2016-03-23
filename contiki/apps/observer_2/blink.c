@@ -103,7 +103,10 @@ static struct etimer et;
 static struct rtimer rt;
 static struct rtimer rtc_rtimer;
 static uint16_t counter;
+static uint8_t buf[4];
 static uint8_t rtc_ya = 0;
+static uint32_t press_val;
+static uint8_t mpuwai;
 
 /*---------------------------------------------------------------------------*/
 PROCESS(rtc_process, "rtc process");
@@ -161,10 +164,10 @@ PROCESS_THREAD(rtc_process, ev, data)
 	
 
 	// mic pfet
-    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
+    /*GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
     ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
     GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
-    GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
+    GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));*/
 
 	lps331ap_init();
 	mpu9250_init();	
@@ -179,12 +182,14 @@ PROCESS_THREAD(rtc_process, ev, data)
     } while(0) ;
 		
 
-	//static rv3049_time_t alarm_time;
-	//rv3049_read_time(&alarm_time);
-	//alarm_time.seconds = 0;
-	//rv3049_clear_int_flag(); //in case rtc wasn't powered off and alarm fired
-	//rv3049_set_alarm(&alarm_time, 0x01);
-    //rv3049_interrupt_enable(rtc_callback);
+	static rv3049_time_t alarm_time;
+	rv3049_read_time(&alarm_time);
+	alarm_time.seconds = 0;
+	rv3049_clear_int_flag(); //in case rtc wasn't powered off and alarm fired
+	rv3049_set_alarm(&alarm_time, 0x01);
+    rv3049_interrupt_enable(rtc_callback);
+
+	mpu9250_readWAI();
 
   	//etimer_set(&et, CLOCK_SECOND);
 	rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*2, 1, 						rt_callback, NULL);	
@@ -209,12 +214,18 @@ PROCESS_THREAD(rtc_process, ev, data)
 		counter++;
 		//leds_toggle(LEDS_GREEN);
 
-		//lps331ap_one_shot();
+		press_val = lps331ap_one_shot();
+		mpuwai = mpu9250_readWAI();
+
+		buf[0] = (press_val & 0x000000FF);
+		buf[1] = (press_val & 0x0000FF00) >> 8;
+		buf[2] = (press_val & 0x00FF0000) >> 16; 
+		buf[3] = mpuwai;
 
 		CC2538_RF_CSP_ISTXON();
 		//NETSTACK_MAC.on();
 		broadcast_open(&bc, BROADCAST_CHANNEL, &bc_rx);
-		packetbuf_copyfrom(&counter, sizeof(counter));
+		packetbuf_copyfrom(buf, 4);
 		broadcast_send(&bc);
 		broadcast_close(&bc);
 		//NETSTACK_MAC.off(0);

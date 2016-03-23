@@ -165,6 +165,8 @@ float AK8963_ADJUST_Z;
 
 void mpu9250_init();
 
+uint8_t mpu9250_readWAI();
+
 void ak8963_init(uint8_t mode);
 
 void mpu9250_readByte(uint8_t reg_addr, uint8_t *data);

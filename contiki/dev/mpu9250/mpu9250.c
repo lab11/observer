@@ -186,6 +186,13 @@ void ak8963_readMultiple(uint8_t reg_addr, uint8_t len, uint8_t *data) {
 
 }
 
+uint8_t mpu9250_readWAI() {
+	uint8_t data;
+	mpu9250_readByte(MPU9250_WHO_AM_I, &data);
+
+	return data;
+}
+
 void mpu9250_readByte(uint8_t reg_addr, uint8_t *data) {
 
 	reg_addr |= MPU9250_READ_MASK;

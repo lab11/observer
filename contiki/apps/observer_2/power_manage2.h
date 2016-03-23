@@ -9,7 +9,7 @@
 #define LIGHT_CONNECTED	1
 #define TEMP_CONNECTED	0
 #define PIR_CONNECTED	0
-#define MIC_CONNECTED	1
+#define MIC_CONNECTED	0
 
 void disable_unused_pins() {
     uint8_t pin_mask_A = 0xFF; // ADC7|ADC6|ADC5|ADC4|ADC3|BTLDRCTRL|BTLDRTX|BTLDRRX
@@ -98,6 +98,9 @@ void disable_unused_pins() {
 
 }
 
+// mpu9250 operates on SPI MODE with polarity 1 (i.e. clock high idle)
+// so must ensure that before sleep or it drains current
+// lps331ap drains current if MOSI left floating, so drive it
 void cleanup_before_sleep() {
 	//spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 	// arbitrary write to get spi periph into above mode	
@@ -118,11 +121,12 @@ void cleanup_before_sleep() {
 }
 
 void setup_before_wake() {
-    spix_enable(0);
+    //spix_enable(0);
     //GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(6));
     GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(GPIO_C_NUM), GPIO_PIN_MASK(7));
 
     GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(SPI0_RX_PORT), GPIO_PIN_MASK(SPI0_RX_PIN));
-
+	//spi_init();	
+	spix_enable(0);
     //i2c_master_enable();
 }
