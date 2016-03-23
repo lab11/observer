@@ -135,7 +135,7 @@ rt_callback(struct rtimer *t, void *ptr)
 {
   //leds_off(LEDS_PERIODIC);
 	process_poll(&rtc_process);
-	leds_toggle(LEDS_GREEN);
+	//leds_toggle(LEDS_GREEN);
 }
 
 void
@@ -143,7 +143,7 @@ rtc_callback(struct rtimer *t, void *ptr)
 {
 	rtc_ya = 1;
 	process_poll(&rtc_process);
-	leds_toggle(LEDS_BLUE);
+	//leds_toggle(LEDS_BLUE);
 }
 
 void
@@ -178,7 +178,7 @@ PROCESS_THREAD(rtc_process, ev, data)
 	lps331ap_init();
 	mpu9250_init();	
 	mpu9250_motion_interrupt_init(0x7F, 6);
-	//mpu9250_interrupt_enable(accel_irq_handler);
+	mpu9250_interrupt_enable(accel_irq_handler);
 	//ak8963_init(0x06);
 	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 	amn41122_init();

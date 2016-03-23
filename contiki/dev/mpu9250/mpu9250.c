@@ -426,12 +426,12 @@ void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequen
 void mpu9250_interrupt_enable(gpio_callback_t accel_irq_handler){
 	GPIO_PERIPHERAL_CONTROL(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
      GPIO_SET_INPUT(GPIO_PORT_TO_BASE(MPU9250_INT_PORT), GPIO_PIN_MASK(MPU9250_INT_PIN));
-	GPIO_POWER_UP_ON_RISING(MPU9250_INT_PORT, GPIO_PIN_MASK(MPU9250_INT_PIN));
-	GPIO_ENABLE_POWER_UP_INTERRUPT(MPU9250_INT_PORT, GPIO_PIN_MASK(MPU9250_INT_PIN));
+	//GPIO_POWER_UP_ON_RISING(MPU9250_INT_PORT, GPIO_PIN_MASK(MPU9250_INT_PIN));
+	//GPIO_ENABLE_POWER_UP_INTERRUPT(MPU9250_INT_PORT, GPIO_PIN_MASK(MPU9250_INT_PIN));
   	ioc_set_over(MPU9250_INT_PORT, MPU9250_INT_PIN, IOC_OVERRIDE_DIS);
-  	nvic_interrupt_enable(MPU9250_INT_VECTOR);
+  	//nvic_interrupt_enable(MPU9250_INT_VECTOR);
   	//gpio_register_callback(temp_irq_handler, MPU9250_INT_PORT, MPU9250_INT_PIN);
-  	gpio_register_callback(accel_irq_handler, MPU9250_INT_PORT, MPU9250_INT_PIN);
+  	//gpio_register_callback(accel_irq_handler, MPU9250_INT_PORT, MPU9250_INT_PIN);
 }
 
 void mpu9250_interrupt_disable() {
