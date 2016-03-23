@@ -207,6 +207,7 @@ void mpu9250_int_clear();
 */
 void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency);
 void mpu9250_interrupt_enable(gpio_callback_t accel_irq_handler);
+void mpu9250_interrupt_disable();
 
 void temp_irq_handler(uint8_t port, uint8_t pin);
 //void accel_irq_handler(uint8_t port, uint8_t pin);

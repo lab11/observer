@@ -85,6 +85,7 @@
 #include "mpu9250.h"
 #include "si1147.h"
 #include "si7021.h"
+#include "amn41122.h"
 #include "rv3049.h"
 
 #include <stdio.h>
@@ -108,6 +109,7 @@ static uint8_t buf[4];
 static uint8_t rtc_ya = 0;
 static uint32_t press_val;
 static uint8_t mpuwai;
+static uint8_t ak8963wia;
 
 /*---------------------------------------------------------------------------*/
 PROCESS(rtc_process, "rtc process");
@@ -165,16 +167,18 @@ PROCESS_THREAD(rtc_process, ev, data)
 	
 
 	// mic pfet
-    /*GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
+    GPIO_SOFTWARE_CONTROL(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
     ioc_set_over(GPIO_B_NUM, 6, IOC_OVERRIDE_DIS);
     GPIO_SET_OUTPUT(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
-    GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));*/
+    GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
 
 	lps331ap_init();
 	mpu9250_init();	
 	mpu9250_motion_interrupt_init(0x7F, 6);
 	mpu9250_interrupt_enable(accel_irq_handler);
+	//ak8963_init(0x06);
 	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
+	amn41122_init();
 
 	timer_set(&t, CLOCK_SECOND*3);
     do {
@@ -217,10 +221,14 @@ PROCESS_THREAD(rtc_process, ev, data)
 
 		press_val = lps331ap_one_shot();
 		mpuwai = mpu9250_readWAI();
+		//ak8963wia = ak8963_readWIA();
 
-		buf[0] = (press_val & 0x000000FF);
-		buf[1] = (press_val & 0x0000FF00) >> 8;
-		buf[2] = (press_val & 0x00FF0000) >> 16; 
+		//buf[0] = (press_val & 0x000000FF);
+		//buf[1] = (press_val & 0x0000FF00) >> 8;
+		//buf[2] = (press_val & 0x00FF0000) >> 16; 
+		buf[0] = 1;
+		buf[1] = 2;
+		buf[2] = 3;
 		buf[3] = mpuwai;
 
 		CC2538_RF_CSP_ISTXON();

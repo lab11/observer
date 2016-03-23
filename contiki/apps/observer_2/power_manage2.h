@@ -8,8 +8,8 @@
 #define PRESS_CONNECTED 1
 #define LIGHT_CONNECTED	1
 #define TEMP_CONNECTED	0
-#define PIR_CONNECTED	0
-#define MIC_CONNECTED	0
+#define PIR_CONNECTED	1
+#define MIC_CONNECTED	1
 
 void disable_unused_pins() {
     uint8_t pin_mask_A = 0xFF; // ADC7|ADC6|ADC5|ADC4|ADC3|BTLDRCTRL|BTLDRTX|BTLDRRX

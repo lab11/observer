@@ -21,7 +21,7 @@ void mpu9250_init() {
 	SPI_CS_SET(MPU9250_CS_PORT, MPU9250_CS_PIN);
 
     // Clear sleep bit to start sensor
-    mpu9250_writeByte(MPU9250_PWR_MGMT_1, 0x00); //80
+    mpu9250_writeByte(MPU9250_PWR_MGMT_1, 0x80); //80
   
     // disable mpu9250 i2c
     //mpu9250_writeSensor(MPU9250_USER_CTRL, 0x10);
@@ -161,7 +161,7 @@ void ak8963_readByte(uint8_t reg_addr, uint8_t *data) {
     mpu9250_writeByte(MPU9250_I2C_SLV0_REG, reg_addr);
     // send the read command from mpu9250
     mpu9250_writeByte(MPU9250_I2C_SLV0_CTRL, 0x81);
-    clock_delay_usec(50000); // delay 10ms
+    clock_delay_usec(10000); // delay 10ms
 
     // then read result from the "mailbox" reg
     mpu9250_readByte(MPU9250_EXT_SENS_DATA_00, data);
@@ -179,7 +179,7 @@ void ak8963_readMultiple(uint8_t reg_addr, uint8_t len, uint8_t *data) {
     mpu9250_writeByte(MPU9250_I2C_SLV0_REG, reg_addr);
     // send the read command from mpu9250
     mpu9250_writeByte(MPU9250_I2C_SLV0_CTRL, 0x80 | len);
-    clock_delay_usec(50000); // delay 10ms
+    clock_delay_usec(10000); // delay 10ms
 
     // then read result from the "mailbox" reg
     mpu9250_readMultiple(MPU9250_EXT_SENS_DATA_00, len, data);
@@ -432,6 +432,10 @@ void mpu9250_interrupt_enable(gpio_callback_t accel_irq_handler){
   	nvic_interrupt_enable(MPU9250_INT_VECTOR);
   	//gpio_register_callback(temp_irq_handler, MPU9250_INT_PORT, MPU9250_INT_PIN);
   	gpio_register_callback(accel_irq_handler, MPU9250_INT_PORT, MPU9250_INT_PIN);
+}
+
+void mpu9250_interrupt_disable() {
+	GPIO_DISABLE_POWER_UP_INTERRUPT(MPU9250_INT_PORT, GPIO_PIN_MASK(MPU9250_INT_PIN));
 }
 
 void temp_irq_handler(uint8_t port, uint8_t pin) {
