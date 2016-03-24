@@ -117,7 +117,8 @@ static uint8_t ak8963wia;
 /*---------------------------------------------------------------------------*/
 PROCESS(rtc_process, "rtc process");
 PROCESS(accel_process, "accel process");
-AUTOSTART_PROCESSES(&rtc_process, &accel_process);
+PROCESS(pir_process, "pir process");
+AUTOSTART_PROCESSES(&rtc_process, &accel_process, &pir_process);
 /*---------------------------------------------------------------------------*/
 static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
@@ -147,11 +148,24 @@ rtc_callback(struct rtimer *t, void *ptr)
 }
 
 void
+pir_rt_int_enable_callback(struct rtimer *t, void *ptr) 
+{
+	// rtimer callback to reenable PIR power up interrupt
+	GPIO_ENABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+}
+
+void
 accel_irq_handler(uint8_t port, uint8_t pin)
 {
 	leds_toggle(LEDS_BLUE);
 	process_poll(&accel_process);
 	//leds_toggle(LEDS_ALL);
+}
+
+void
+pir_irq_handler(uint8_t port, uint8_t pin)
+{
+	process_poll(&pir_process);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -306,6 +320,54 @@ PROCESS_THREAD(accel_process, ev, data) {
 		setup_before_wake();
 
 		mpu9250_int_clear();
+
+		cleanup_before_sleep();
+		//leds_toggle(LEDS_ALL);
+
+	}
+
+	PROCESS_END();
+}
+
+PROCESS_THREAD(pir_process, ev, data) {
+	PROCESS_BEGIN();
+
+	while(1) {
+		
+		PROCESS_YIELD();
+		setup_before_wake();
+
+		press = lps331ap_one_shot();
+		temp = si7021_readTemp(TEMP_NOHOLD);
+		rh = si7021_readHumd(RH_NOHOLD);
+		si1147_als_force_read(&als_data);
+		mpuwai = mpu9250_readWAI();
+		//ak8963wia = ak8963_readWIA();
+
+		//buf[0] = (press_val & 0x000000FF);
+		//buf[1] = (press_val & 0x0000FF00) >> 8;
+		//buf[2] = (press_val & 0x00FF0000) >> 16; 
+		buf[0] = 0x01;
+		buf[1] = temp;
+		buf[2] = (temp & 0xFF00) >> 8;
+		buf[3] = rh;
+		buf[4] = (rh & 0xFF00) >> 8;
+		buf[5] = als_data.vis.b.lo;
+		buf[6] = als_data.vis.b.hi;
+		buf[7] = press & 0x000000FF;
+		buf[8] = (press & 0x0000FF00) >> 8;
+		buf[9] = (press & 0x00FF0000) >> 16;
+		buf[10] = 0x99;
+
+		CC2538_RF_CSP_ISTXON();
+		//NETSTACK_MAC.on();
+		broadcast_open(&bc, BROADCAST_CHANNEL, &bc_rx);
+		packetbuf_copyfrom(buf, 11);
+		broadcast_send(&bc);
+		broadcast_close(&bc);
+		//NETSTACK_MAC.off(0);
+		CC2538_RF_CSP_ISRFOFF();
+
 
 		cleanup_before_sleep();
 		//leds_toggle(LEDS_ALL);

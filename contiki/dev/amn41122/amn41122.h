@@ -19,7 +19,8 @@
 
 void amn41122_init();
 uint8_t amn41122_read();
-void amn41122_irq_enable(gpio_callback_t callback);
+void amn41122_int_enable(gpio_callback_t callback);
+void amn41122_int_disable();
 void amn41122_irq_handler(uint8_t port, uint8_t pin);
 
 #endif /*AMN41122_H*/
