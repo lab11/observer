@@ -199,14 +199,18 @@ PROCESS_THREAD(rtc_process, ev, data)
 	mpu9250_interrupt_enable(accel_irq_handler);
 	//ak8963_init(0x06);
 	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
+	leds_on(LEDS_RED);
 	amn41122_init();
+	leds_off(LEDS_RED);
+	leds_on(LEDS_GREEN);
 
 	timer_set(&t, CLOCK_SECOND*3);
     do {
         volatile uint8_t i=0;
         while(!timer_expired(&t)) i++;
     } while(0) ;
-		
+	leds_off(LEDS_GREEN);
+	
 
 	static rv3049_time_t alarm_time;
 	rv3049_read_time(&alarm_time);

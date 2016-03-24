@@ -16,11 +16,11 @@ extern const struct process observer_lp_process;
 
 
 void amn41122_init() {
-  timer_set(&amn41122_startup_timer, AMN41122_STARTUP_TIME);
-  //WAIT_WHILE(!timer_expired(&amn41122_startup_timer));
-
   // pull it down
   ioc_set_over(AMN41122_OUT_PORT, AMN41122_OUT_PIN, IOC_OVERRIDE_PDE);
+
+  timer_set(&amn41122_startup_timer, AMN41122_STARTUP_TIME);
+  WAIT_WHILE(!timer_expired(&amn41122_startup_timer));
 }
 
 uint8_t amn41122_read() {
