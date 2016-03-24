@@ -152,6 +152,8 @@ rtc_callback(struct rtimer *t, void *ptr)
 void
 pir_rt_int_enable_callback(struct rtimer *t, void *ptr) 
 {
+	// clear in case another was pended after right before disabling it
+	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
 	amn41122_int_reenable();
 }
 
@@ -201,6 +203,7 @@ PROCESS_THREAD(rtc_process, ev, data)
 	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 	leds_on(LEDS_RED);
 	amn41122_init();
+	amn41122_int_enable(pir_irq_handler);
 	leds_off(LEDS_RED);
 	leds_on(LEDS_GREEN);
 
