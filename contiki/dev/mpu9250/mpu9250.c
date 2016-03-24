@@ -32,8 +32,8 @@ void mpu9250_init() {
     // disable FSYNC; also sets gyro and temp filter?
     mpu9250_writeByte(MPU9250_CONFIG, 0x03);
 
-    // disable mpu9250 i2c
-    //mpu9250_writeByte(MPU9250_USER_CTRL, 0x10);
+    // disable mpu9250 i2c slave
+    mpu9250_writeByte(MPU9250_USER_CTRL, 0x10);
 
     // ACCEL CONFIG
 	mpu9250_writeByte(MPU9250_ACCEL_CONFIG, 0x18);

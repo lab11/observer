@@ -222,7 +222,7 @@ PROCESS_THREAD(rtc_process, ev, data)
 	rv3049_set_alarm(&alarm_time, 0x01);
     rv3049_interrupt_enable(rtc_callback);
 
-	mpu9250_readWAI();
+	//mpu9250_readWAI();
 
   	//etimer_set(&et, CLOCK_SECOND);
 	rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*2, 1, 						rt_callback, NULL);	
@@ -251,7 +251,7 @@ PROCESS_THREAD(rtc_process, ev, data)
 		temp = si7021_readTemp(TEMP_NOHOLD);
 		rh = si7021_readHumd(RH_NOHOLD);
 		si1147_als_force_read(&als_data);
-		mpuwai = mpu9250_readWAI();
+		//mpuwai = mpu9250_readWAI();
 		//ak8963wia = ak8963_readWIA();
 
 		//buf[0] = (press_val & 0x000000FF);
