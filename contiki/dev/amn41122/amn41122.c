@@ -59,6 +59,10 @@ void amn41122_int_enable(gpio_callback_t callback) {
  
 }
 
+void amn41122_int_reenable() {
+	GPIO_ENABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+}
+
 void amn41122_int_disable() {
 	GPIO_DISABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
 }

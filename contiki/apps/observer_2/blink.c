@@ -101,9 +101,10 @@
 #define BROADCAST_CHANNEL   129
 /*---------------------------------------------------------------------------*/
 static struct timer  t;
-static struct etimer et;
+//static struct etimer et;
 static struct rtimer rt;
 static struct rtimer rtc_rtimer;
+static struct rtimer pir_int_reenable_rtimer;
 static uint16_t counter;
 static uint8_t buf[11];
 static uint8_t rtc_ya = 0;
@@ -147,12 +148,13 @@ rtc_callback(struct rtimer *t, void *ptr)
 	//leds_toggle(LEDS_BLUE);
 }
 
+// rtimer callback to reenable PIR power up interrupt
 void
 pir_rt_int_enable_callback(struct rtimer *t, void *ptr) 
 {
-	// rtimer callback to reenable PIR power up interrupt
-	GPIO_ENABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+	amn41122_int_reenable();
 }
+
 
 void
 accel_irq_handler(uint8_t port, uint8_t pin)
@@ -162,9 +164,11 @@ accel_irq_handler(uint8_t port, uint8_t pin)
 	//leds_toggle(LEDS_ALL);
 }
 
+// PIR handler to disable interrupt (backoff time) and poll process
 void
 pir_irq_handler(uint8_t port, uint8_t pin)
 {
+	amn41122_int_disable();
 	process_poll(&pir_process);
 }
 
@@ -256,9 +260,10 @@ PROCESS_THREAD(rtc_process, ev, data)
 		buf[7] = press & 0x000000FF;
 		buf[8] = (press & 0x0000FF00) >> 8;
 		buf[9] = (press & 0x00FF0000) >> 16;
-		buf[10] = 0x99;
+		buf[10] = 0x00; // not a PIR sample
 
 		CC2538_RF_CSP_ISTXON();
+		CC2538_RF_CSP_ISFLUSHTX();
 		//NETSTACK_MAC.on();
 		broadcast_open(&bc, BROADCAST_CHANNEL, &bc_rx);
 		packetbuf_copyfrom(buf, 11);
@@ -337,6 +342,9 @@ PROCESS_THREAD(pir_process, ev, data) {
 		PROCESS_YIELD();
 		setup_before_wake();
 
+		// rtimer will reenable PIR interrupt after 30s
+		rtimer_set(&pir_int_reenable_rtimer, RTIMER_NOW()+RTIMER_SECOND*30, 1, pir_rt_int_enable_callback, NULL);
+
 		press = lps331ap_one_shot();
 		temp = si7021_readTemp(TEMP_NOHOLD);
 		rh = si7021_readHumd(RH_NOHOLD);
@@ -357,9 +365,10 @@ PROCESS_THREAD(pir_process, ev, data) {
 		buf[7] = press & 0x000000FF;
 		buf[8] = (press & 0x0000FF00) >> 8;
 		buf[9] = (press & 0x00FF0000) >> 16;
-		buf[10] = 0x99;
+		buf[10] = 0x01;
 
 		CC2538_RF_CSP_ISTXON();
+		CC2538_RF_CSP_ISFLUSHTX();
 		//NETSTACK_MAC.on();
 		broadcast_open(&bc, BROADCAST_CHANNEL, &bc_rx);
 		packetbuf_copyfrom(buf, 11);
