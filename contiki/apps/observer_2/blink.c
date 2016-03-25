@@ -198,9 +198,9 @@ PROCESS_THREAD(rtc_process, ev, data)
 	lps331ap_init();
 	mpu9250_init();
 	ak8963_init(0x06);
-	ak8963wia = ak8963_readWIA();
+	//ak8963wia = ak8963_readWIA();
 
-	// re-disable I2C slave and disable I2C master
+	// Disable I2C master
 	uint8_t USER_CTRL_reg;
 	mpu9250_readByte(MPU9250_USER_CTRL, &USER_CTRL_reg);
 	USER_CTRL_reg &= 0xDF; // 0b11011111
@@ -236,6 +236,7 @@ PROCESS_THREAD(rtc_process, ev, data)
   	//etimer_set(&et, CLOCK_SECOND);
 	rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*2, 1, 						rt_callback, NULL);	
 
+	uint8_t PWR_MGMT_1_reg;
   	while(1) {
 		//spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 		// arbitrary write to get spi periph into above mode	
@@ -262,7 +263,34 @@ PROCESS_THREAD(rtc_process, ev, data)
 		si1147_als_force_read(&als_data);
 		//mpuwai = mpu9250_readWAI();
 		//ak8963wia = ak8963_readWIA();
+		//***************************************************//
+		// Disable Cycle Mode (Accel Low Power Mode)
+		mpu9250_readByte(MPU9250_PWR_MGMT_1, &PWR_MGMT_1_reg); // 0xEB
+		PWR_MGMT_1_reg &= 0xDF; // 0b1101 1111
+		mpu9250_writeByte(MPU9250_PWR_MGMT_1, PWR_MGMT_1_reg); // 0x6B
+		
+		// 10ms delay after changing modes? at least this much works
+		// spec doesn't specify mode change, only cold start time
+		clock_delay_usec(10000);
+		
+		// Enable I2C master
+		mpu9250_readByte(MPU9250_USER_CTRL, &USER_CTRL_reg);
+		USER_CTRL_reg |= 0x20; // 0b11011111
+		mpu9250_writeByte(MPU9250_USER_CTRL, USER_CTRL_reg);
 
+		ak8963wia = ak8963_readWIA();
+
+		// Disable I2C master
+		mpu9250_readByte(MPU9250_USER_CTRL, &USER_CTRL_reg);
+		USER_CTRL_reg &= 0xDF; // 0b11011111
+		mpu9250_writeByte(MPU9250_USER_CTRL, USER_CTRL_reg);
+		
+
+		// ReEnable Cycle Mode (Accel Low Power Mode)
+		mpu9250_readByte(MPU9250_PWR_MGMT_1, &PWR_MGMT_1_reg); // 0xEB
+		PWR_MGMT_1_reg |= 0x20;
+		mpu9250_writeByte(MPU9250_PWR_MGMT_1, PWR_MGMT_1_reg); // 0x6B
+		//***********************************************//
 		//buf[0] = (press_val & 0x000000FF);
 		//buf[1] = (press_val & 0x0000FF00) >> 8;
 		//buf[2] = (press_val & 0x00FF0000) >> 16; 
