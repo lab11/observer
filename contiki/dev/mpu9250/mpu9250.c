@@ -48,7 +48,10 @@ void ak8963_init(uint8_t mode) {
 
     
     // Enable MPU9250 internal I2C bus
-    mpu9250_writeByte(MPU9250_USER_CTRL, 0x20);
+	uint8_t USER_CTRL_reg;
+	mpu9250_readByte(MPU9250_USER_CTRL, &USER_CTRL_reg);
+	USER_CTRL_reg |= 0x20;
+    mpu9250_writeByte(MPU9250_USER_CTRL, USER_CTRL_reg);
 
     // Configure MPU9250 I2C frequency 400KHz
     mpu9250_writeByte(MPU9250_I2C_MST_CTRL, 0x0D);
@@ -90,7 +93,7 @@ void ak8963_init(uint8_t mode) {
 
     // Power down ak8963 (b/c we'll do single measurement mode for sampling)
     ak8963_writeByte(AK8963_CNTL1, 0x10); // 0x10 is for 16 bit output
-    clock_delay_usec(10000);
+    clock_delay_usec(100); // after power-down mode is set, wait 100us
 
    /*
     // set i2c address for write
@@ -350,6 +353,11 @@ void mpu9250_int_clear() {
 }
 
 void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequency) {
+	uint8_t PWR_MGMT_1_reg;
+	mpu9250_readByte(MPU9250_PWR_MGMT_1, &PWR_MGMT_1_reg);
+	PWR_MGMT_1_reg &= 0x8F; //0b10001111
+	mpu9250_writeByte(MPU9250_PWR_MGMT_1, PWR_MGMT_1_reg);
+	
 	// Ensure Accel is running
 	uint8_t PWR_MGMT_2_reg;
     mpu9250_readByte(MPU9250_PWR_MGMT_2, &PWR_MGMT_2_reg); // 0xEC
@@ -393,7 +401,7 @@ void mpu9250_motion_interrupt_init(uint8_t WOM_Threshold, uint8_t Wakeup_Frequen
 	mpu9250_writeByte(MPU9250_LP_ACCEL_ODR, LP_ACCEL_ODR_reg); // 0x1E
 
 	// Enable Cycle Mode (Accel Low Power Mode)
-	uint8_t PWR_MGMT_1_reg;
+	//uint8_t PWR_MGMT_1_reg;
     mpu9250_readByte(MPU9250_PWR_MGMT_1, &PWR_MGMT_1_reg); // 0xEB
 	PWR_MGMT_1_reg |= 0x20;
 	mpu9250_writeByte(MPU9250_PWR_MGMT_1, PWR_MGMT_1_reg); // 0x6B

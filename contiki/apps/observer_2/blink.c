@@ -196,7 +196,16 @@ PROCESS_THREAD(rtc_process, ev, data)
     GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_B_NUM), GPIO_PIN_MASK(6));
 
 	lps331ap_init();
-	mpu9250_init();	
+	mpu9250_init();
+	ak8963_init(0x06);
+	ak8963wia = ak8963_readWIA();
+
+	// re-disable I2C slave and disable I2C master
+	uint8_t USER_CTRL_reg;
+	mpu9250_readByte(MPU9250_USER_CTRL, &USER_CTRL_reg);
+	USER_CTRL_reg &= 0xDF; // 0b11011111
+    mpu9250_writeByte(MPU9250_USER_CTRL, USER_CTRL_reg);
+
 	mpu9250_motion_interrupt_init(0x7F, 6);
 	mpu9250_interrupt_enable(accel_irq_handler);
 	//ak8963_init(0x06);
@@ -267,7 +276,7 @@ PROCESS_THREAD(rtc_process, ev, data)
 		buf[7] = press & 0x000000FF;
 		buf[8] = (press & 0x0000FF00) >> 8;
 		buf[9] = (press & 0x00FF0000) >> 16;
-		buf[10] = 0x00; // not a PIR sample
+		buf[10] = ak8963wia; // not a PIR sample
 
 		CC2538_RF_CSP_ISTXON();
 		CC2538_RF_CSP_ISFLUSHTX();
