@@ -87,9 +87,10 @@ void ak8963_init(uint8_t mode) {
     AK8963_ADJUST_X = (float)(calibration_data[0] - 128)/(256.0) + 1;
     AK8963_ADJUST_Y = (float)(calibration_data[1] - 128)/(256.0) + 1;
     AK8963_ADJUST_Z = (float)(calibration_data[2] - 128)/(256.0) + 1;
-    //AK8963_ADJUST_X = calibration_data[0];
-    //AK8963_ADJUST_Y = calibration_data[1];
-    //AK8963_ADJUST_Z = calibration_data[2];    
+    // Also save the raw byte values
+	AK8963_ADJUST_RAW_X = calibration_data[0];
+    AK8963_ADJUST_RAW_Y = calibration_data[1];
+    AK8963_ADJUST_RAW_Z = calibration_data[2];    
 
     // Power down ak8963 (b/c we'll do single measurement mode for sampling)
     ak8963_writeByte(AK8963_CNTL1, 0x10); // 0x10 is for 16 bit output

@@ -106,7 +106,7 @@ static struct rtimer rt;
 static struct rtimer rtc_rtimer;
 static struct rtimer pir_int_reenable_rtimer;
 static uint16_t counter;
-static uint8_t buf[11];
+static uint8_t buf[20];
 static uint8_t rtc_ya = 0;
 static uint32_t press;
 static uint16_t temp;
@@ -129,7 +129,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
          *(uint16_t *)packetbuf_dataptr());
 }
 /*---------------------------------------------------------------------------*/
-static const struct broadcast_callbacks bc_rx = { broadcast_recv };
+static const struct broadcast_callbacks bc_rx = { NULL};
 static struct broadcast_conn bc;
 /*---------------------------------------------------------------------------*/
 void
@@ -237,6 +237,8 @@ PROCESS_THREAD(rtc_process, ev, data)
 	rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*2, 1, 						rt_callback, NULL);	
 
 	uint8_t PWR_MGMT_1_reg;
+	int8_t ret_val;
+    uint8_t mag_reg[6];
   	while(1) {
 		//spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 		// arbitrary write to get spi periph into above mode	
@@ -278,6 +280,17 @@ PROCESS_THREAD(rtc_process, ev, data)
 		USER_CTRL_reg |= 0x20; // 0b11011111
 		mpu9250_writeByte(MPU9250_USER_CTRL, USER_CTRL_reg);
 
+		// Sample Magnetometer
+		/*ret_val = ak8963_read_Mag(regs);
+        if (ret_val == -1) {
+            //printf("Data not ready\n");
+        } else if (ret_val == -2) {
+            //printf("Data overflow\n");
+        } else {
+			//x_mag = (regs[1] << 8)|regs[0] * AK8963_ADJUST_X;
+		    //y_mag = (regs[3] << 8)|regs[2]) * AK8963_ADJUST_Y;
+		    //z_mag = ((regs[5] << 8)|regs[4]) * AK8963_ADJUST_Z;
+		}*/
 		ak8963wia = ak8963_readWIA();
 
 		// Disable I2C master
@@ -305,12 +318,22 @@ PROCESS_THREAD(rtc_process, ev, data)
 		buf[8] = (press & 0x0000FF00) >> 8;
 		buf[9] = (press & 0x00FF0000) >> 16;
 		buf[10] = ak8963wia; // not a PIR sample
+		buf[11] = 1;//mag_reg[0];
+		buf[12] = 2;//mag_reg[1];
+		buf[13] = 3;//mag_reg[2];
+		buf[14] = 4;//mag_reg[3];
+		buf[15] = 5;//mag_reg[4];
+		buf[16] = 6;//mag_reg[5];
+		buf[17] = AK8963_ADJUST_RAW_X;
+		buf[18] = AK8963_ADJUST_RAW_Y;
+		buf[19] = AK8963_ADJUST_RAW_Z;
+		
 
 		CC2538_RF_CSP_ISTXON();
 		CC2538_RF_CSP_ISFLUSHTX();
 		//NETSTACK_MAC.on();
 		broadcast_open(&bc, BROADCAST_CHANNEL, &bc_rx);
-		packetbuf_copyfrom(buf, 11);
+		packetbuf_copyfrom(buf, 20);
 		broadcast_send(&bc);
 		broadcast_close(&bc);
 		//NETSTACK_MAC.off(0);
