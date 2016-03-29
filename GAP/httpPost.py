@@ -26,7 +26,7 @@ while 1:
     parsed_data[len(parsed_data) - 1] = parsed_data[len(parsed_data) - 1].rstrip('\n')
  
     try:
-	payload = {'id' : int(float(parsed_data[0])), 'temp' : float(parsed_data[1]), 'rh' : float(parsed_data[2]), 'press' : float(parsed_data[3]), 'light' : float(parsed_data[4]), 'pir': int(parsed_data[5]) }    
+	payload = {'id' : int(float(parsed_data[0])), 'temp' : float(parsed_data[1]), 'rh' : float(parsed_data[2]), 'press' : float(parsed_data[3]), 'light' : float(parsed_data[4]), 'pir': int(parsed_data[5]), 'xmag': float(parsed_data[6]),'ymag': float(parsed_data[7]), 'zmag': float(parsed_data[8]), 'xaccel': int(float(parsed_data[9])), 'yaccel': int(float(parsed_data[10])), 'zaccel': int(float(parsed_data[11])) }    
 
     	try:    
        	    if (int(parsed_data[5]) == 0 or int(parsed_data[5]) == 1):
@@ -46,6 +46,12 @@ while 1:
     print  parsed_data[3]
     print  parsed_data[4]
     print  parsed_data[5]
+    print  parsed_data[6]
+    print  parsed_data[7]
+    print  parsed_data[8]
+    print  parsed_data[9]
+    print  parsed_data[10]
+    print  parsed_data[11]
     print  math.floor(time.time()*1000)
    
         
