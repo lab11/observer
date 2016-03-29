@@ -106,12 +106,13 @@ static struct rtimer rt;
 static struct rtimer rtc_rtimer;
 static struct rtimer pir_int_reenable_rtimer;
 static uint16_t counter;
-static uint8_t buf[20];
+static uint8_t buf[26];
 static uint8_t rtc_ya = 0;
 static uint32_t press;
 static uint16_t temp;
 static uint16_t rh;
 static si1147_als_data_t als_data;
+static int16_t accel_x, accel_y, accel_z;
 static uint8_t mpuwai;
 static uint8_t ak8963wia;
 
@@ -237,8 +238,10 @@ PROCESS_THREAD(rtc_process, ev, data)
 	rtimer_set(&rtc_rtimer, RTIMER_NOW() + RTIMER_SECOND*2, 1, 						rt_callback, NULL);	
 
 	uint8_t PWR_MGMT_1_reg;
+
 	int8_t ret_val;
-    uint8_t mag_reg[6];
+    static uint8_t mag_reg[6];
+	uint8_t mag_success = 0;
   	while(1) {
 		//spix_set_mode(0, SSI_CR0_FRF_MOTOROLA, SSI_CR0_SPO, SSI_CR0_SPH, 8);
 		// arbitrary write to get spi periph into above mode	
@@ -281,17 +284,23 @@ PROCESS_THREAD(rtc_process, ev, data)
 		mpu9250_writeByte(MPU9250_USER_CTRL, USER_CTRL_reg);
 
 		// Sample Magnetometer
-		/*ret_val = ak8963_read_Mag(regs);
+		ret_val = ak8963_read_Mag(mag_reg);
         if (ret_val == -1) {
             //printf("Data not ready\n");
         } else if (ret_val == -2) {
             //printf("Data overflow\n");
         } else {
+			// nothing, success
+			mag_success = 1;
 			//x_mag = (regs[1] << 8)|regs[0] * AK8963_ADJUST_X;
 		    //y_mag = (regs[3] << 8)|regs[2]) * AK8963_ADJUST_Y;
 		    //z_mag = ((regs[5] << 8)|regs[4]) * AK8963_ADJUST_Z;
-		}*/
+		}
 		ak8963wia = ak8963_readWIA();
+
+		accel_x = mpu9250_readSensor(MPU9250_ACCEL_XOUT_L, MPU9250_ACCEL_XOUT_H);
+		accel_y = mpu9250_readSensor(MPU9250_ACCEL_YOUT_L, MPU9250_ACCEL_YOUT_H);
+		accel_z = mpu9250_readSensor(MPU9250_ACCEL_ZOUT_L, MPU9250_ACCEL_ZOUT_H);
 
 		// Disable I2C master
 		mpu9250_readByte(MPU9250_USER_CTRL, &USER_CTRL_reg);
@@ -317,23 +326,32 @@ PROCESS_THREAD(rtc_process, ev, data)
 		buf[7] = press & 0x000000FF;
 		buf[8] = (press & 0x0000FF00) >> 8;
 		buf[9] = (press & 0x00FF0000) >> 16;
-		buf[10] = ak8963wia; // not a PIR sample
-		buf[11] = 1;//mag_reg[0];
-		buf[12] = 2;//mag_reg[1];
-		buf[13] = 3;//mag_reg[2];
-		buf[14] = 4;//mag_reg[3];
-		buf[15] = 5;//mag_reg[4];
-		buf[16] = 6;//mag_reg[5];
+		buf[10] = 0; // not a PIR sample
+		if (mag_success) {
+			buf[11] = mag_reg[0];
+			buf[12] = mag_reg[1];
+			buf[13] = mag_reg[2];
+			buf[14] = mag_reg[3];
+			buf[15] = mag_reg[4];
+			buf[16] = mag_reg[5];
+		} // else leave as old values, aka don't update
+		mag_success = 0; // reset
 		buf[17] = AK8963_ADJUST_RAW_X;
 		buf[18] = AK8963_ADJUST_RAW_Y;
 		buf[19] = AK8963_ADJUST_RAW_Z;
+		buf[20] = accel_x & 0xFF;
+		buf[21] = (accel_x >> 8) & 0xFF;
+		buf[22] = (accel_y) & 0xFF;
+		buf[23] = (accel_y >> 8) & 0xFF;
+		buf[24] = (accel_z) & 0xFF;
+		buf[25] = (accel_z >> 8) & 0xFF;
 		
 
 		CC2538_RF_CSP_ISTXON();
 		CC2538_RF_CSP_ISFLUSHTX();
 		//NETSTACK_MAC.on();
 		broadcast_open(&bc, BROADCAST_CHANNEL, &bc_rx);
-		packetbuf_copyfrom(buf, 20);
+		packetbuf_copyfrom(buf, 26);
 		broadcast_send(&bc);
 		broadcast_close(&bc);
 		//NETSTACK_MAC.off(0);
