@@ -115,6 +115,8 @@ static si1147_als_data_t als_data;
 static int16_t accel_x, accel_y, accel_z;
 static uint8_t mpuwai;
 static uint8_t ak8963wia;
+static uint8_t pir_active =1;
+static uint32_t pir_active_cnt = 0;
 
 static uint8_t USER_CTRL_reg;
 static uint8_t PWR_MGMT_1_reg;
@@ -151,6 +153,14 @@ void
 rtc_callback(struct rtimer *t, void *ptr)
 {
 	rtc_ya = 1;
+	/*pir_active_cnt++;
+	if (pir_active == 0 && pir_active_cnt > 1) {
+		pir_active = 1;
+		pir_active_cnt = 0;
+		GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+		GPIO_CLEAR_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+		GPIO_ENABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+	}*/
 	process_poll(&rtc_process);
 	//leds_toggle(LEDS_BLUE);
 }
@@ -159,9 +169,13 @@ rtc_callback(struct rtimer *t, void *ptr)
 void
 pir_rt_int_enable_callback(struct rtimer *t, void *ptr) 
 {
+	pir_active = 1;
+	pir_active_cnt = 0;
+	leds_toggle(LEDS_GREEN);
 	// clear in case another was pended after right before disabling it
 	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
-	amn41122_int_reenable();
+	GPIO_CLEAR_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+	GPIO_ENABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
 }
 
 
@@ -173,12 +187,20 @@ accel_irq_handler(uint8_t port, uint8_t pin)
 	//leds_toggle(LEDS_ALL);
 }
 
-// PIR handler to disable interrupt (backoff time) and poll process
+// PIR handler to disable interrupt (backoff time), set reenable rtimer and poll process
 void
 pir_irq_handler(uint8_t port, uint8_t pin)
 {
+	pir_active = 0;
+	pir_active_cnt = 0;
 	amn41122_int_disable();
+	// clear in case contiki didn't or another one slipped through and pended
+	GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+	GPIO_CLEAR_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+	// rtimer will reenable PIR interrupt after 30s
+	rtimer_set(&pir_int_reenable_rtimer, RTIMER_NOW()+RTIMER_SECOND*30, 1, pir_rt_int_enable_callback, NULL);
 	process_poll(&pir_process);
+	leds_toggle(LEDS_GREEN);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -219,7 +241,7 @@ PROCESS_THREAD(rtc_process, ev, data)
 	si1147_init(SI1147_FORCED_CONVERSION, SI1147_ALS_ENABLE);
 	leds_on(LEDS_RED);
 	amn41122_init();
-	amn41122_int_enable(pir_irq_handler);
+	//amn41122_int_enable(pir_irq_handler);
 	leds_off(LEDS_RED);
 	leds_on(LEDS_GREEN);
 
@@ -237,6 +259,7 @@ PROCESS_THREAD(rtc_process, ev, data)
 	rv3049_clear_int_flag(); //in case rtc wasn't powered off and alarm fired
 	rv3049_set_alarm(&alarm_time, 0x01);
     rv3049_interrupt_enable(rtc_callback);
+	amn41122_int_enable(pir_irq_handler);
 
 	//mpu9250_readWAI();
 
@@ -258,6 +281,17 @@ PROCESS_THREAD(rtc_process, ev, data)
 		//i2c_master_enable();
 		setup_before_wake();
 		
+		// check if pir supposed to be active but for some reason not
+		/*if (pir_active) {
+			// if power up int says it's not active, turn on
+			if ( (GPIO_GET_POWER_UP_INT_STATUS(AMN41122_OUT_PORT) & (0x01 << AMN41122_OUT_PIN)) == 0) {
+				// clear in case another was pended after right before disabling it
+				GPIO_CLEAR_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+				GPIO_CLEAR_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+				GPIO_ENABLE_POWER_UP_INTERRUPT(AMN41122_OUT_PORT, GPIO_PIN_MASK(AMN41122_OUT_PIN));
+			}
+		}*/
+
 		//etimer_reset(&et);
 		if (rtc_ya) {
 			rv3049_clear_int_flag();
@@ -433,8 +467,8 @@ PROCESS_THREAD(pir_process, ev, data) {
 		PROCESS_YIELD();
 		setup_before_wake();
 
-		// rtimer will reenable PIR interrupt after 30s
-		rtimer_set(&pir_int_reenable_rtimer, RTIMER_NOW()+RTIMER_SECOND*30, 1, pir_rt_int_enable_callback, NULL);
+		//// rtimer will reenable PIR interrupt after 30s
+		//rtimer_set(&pir_int_reenable_rtimer, RTIMER_NOW()+RTIMER_SECOND*30, 1, pir_rt_int_enable_callback, NULL);
 
 		press = lps331ap_one_shot();
 		temp = si7021_readTemp(TEMP_NOHOLD);
