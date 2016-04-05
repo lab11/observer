@@ -1,0 +1,185 @@
+<!DOCTYPE>
+<meta charset="utf-8">
+<style>
+body {
+  font: 10px sans-serif;
+}
+
+
+</style>
+<html>
+	<head>
+		<script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+		<script type="text/javascript" src= "../js/attempt_2.js"></script>
+		<script src="https://cdn.socket.io/socket.io-1.3.5.js"></script>
+		<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.js"></script>
+		-->
+		<!-- <script src="http://quincewebdesign.com/cdn/Chart.js"></script>
+		-->
+		<script type="text/javascript" src="../../../Chart.js-v2-gitrepo/Chart.js/Chart.js"></script>
+		
+		<script type="text/javascript" src="../../../Chart.Scatter/Chart.Scatter.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/randomcolor/0.4.4/randomColor.js"></script>
+	</head>
+	<body>
+		<button id='temp_button' style="position:absolute">Temp</button>
+	</body>
+	<body>
+		<canvas id="tempcanvas" width="960" height="500"></canvas>
+		<canvas id="pircanvas" width="960" height="500"></canvas>
+		<canvas id="accelcanvas" width="480" height="250"></canvas>
+
+		<script>
+			var button = document.getElementById('temp_button');
+			button.onclick = function() {
+				var temp_chart = document.getElementById('tempcanvas');
+				if (temp_chart.style.display !== 'none') {
+					temp_chart.style.display = 'none';
+				} else {
+					temp_chart.style.display = 'block';
+				}
+			};
+			var historyTime = 3*60*60*1000;
+
+			// generate random colors for the graph
+			var colors = randomColor({
+  				luminosity: 'bright',
+				count: 10,
+   				format: 'rgb' // e.g. 'rgba(9, 1, 107, 0.6482447960879654)'
+				});
+
+			// need to manually add alpha so colors are not as translucent
+			for (i=0; i < colors.length; i++) {
+				colors[i] = colors[i].replace(")", ", .8)");
+				colors[i] = colors[i].replace("rgb", "rgba");
+			}
+			//console.log(colors[0]);
+			//console.log(colors[1]);
+
+			/*
+			var temp_data = {
+				labels: ["January", "February", "March", "April", "May", "June", "July"],
+				datasets: [
+					{
+						label: "ID:1",
+						//fillColor: colors[1],//"rgba(220,220,220,0.2)",
+						strokeColor: colors[1],//"rgba(220,220,220,1)",
+						pointColor: colors[1],//"rgba(220,220,220,1)",
+						//pointStrokeColor: "#fff",
+						//pointHighlightFill: "#fff",
+						pointHighlightStroke: colors[1],//"rgba(220,220,220,1)",
+						data: [65, 59, 80, 81, 56, 55, 40]
+					},
+					{
+						label: "ID:2",
+						//fillColor: "rgba(151,187,205,0.2)",
+						strokeColor: colors[5],//"rgba(151,187,205,1)",
+						pointColor: colors[5],//"rgba(151,187,205,1)",
+						//pointStrokeColor: "#fff",
+						//pointHighlightFill: "#fff",
+						pointHighlightStroke: colors[5],//"rgba(151,187,205,1)",
+						data: [28, 48, 40, 19, 86, 27, 90]
+					}
+				]
+			};
+
+			var temp_data_options = { 'datasetFill': false, 'bezierCurve' : true, 'bezierCurveTension': 0.2};
+			
+			var temp = document.getElementById("temp").getContext("2d");
+			var temp_chart = new Chart(temp).Line(temp_data, temp_data_options);
+			*/
+			/*Chart.types.Scatter.extend({
+				name: "ScatterAlt",
+				draw: function () {
+					Chart.types.Scatter.prototype.draw.apply(this, arguments);
+
+					var ctx = this.chart.ctx;
+					ctx.save();
+					// text alignment and color
+					ctx.textAlign = "center";
+					ctx.textBaseline = "bottom";
+					ctx.fillStyle = "rgba(9, 1, 107, 1)"; //this.options.scaleFontColor;
+					// position
+					var x = this.scale.xScalePaddingLeft * 0.4;
+					var y = this.chart.height / 2;
+					// change origin
+					ctx.translate(x, y)
+					// rotate text
+					ctx.rotate(-90 * Math.PI / 180);
+					ctx.fillText(this.datasets[0].label, 0, 0);
+					ctx.restore();
+				}
+			});*/
+			
+			var temp_data = [
+			{
+			  label: "temperature",
+			  strokeColor: '#F16220',
+			  pointColor: '#F16220',
+			  pointStrokeColor: '#fff',
+			  data: sensors[1].temp,
+			}];
+
+			// ****** new chart ****//
+			// Get the context of the canvas element we want to select
+			var ctxx = document.getElementById("tempcanvas").getContext("2d");
+			var temp_chart = new Chart(ctxx).Scatter(temp_data, {animation: false, scaleGridLineColor : "rgba(0,0,0,.20)", scaleLabel: "                      <%=value%> F", pointDotRadius: 3, scaleType: "date", scaleDateFormat:"mm-dd-yyyy", scaleTimeFormat:"HH:MM:ss", scaleDateTimeFormat:"mm-dd-yyyy HH:MM:ss", useUtc:false});
+
+			var pir_data = [
+			{
+			  label: 'My First dataset',
+			  strokeColor: '#F16220',
+			  pointColor: '#F16220',
+			  pointStrokeColor: '#fff',
+			  data: sensors[1].pir,
+			}];
+			var chartDom = document.getElementById("pircanvas").getContext("2d");
+			var pir_chart = new Chart(chartDom).Scatter(pir_data, {animation: false, scaleGridLineColor : "rgba(0,0,0,.20)", scaleLabel: "                      <%=value%>", pointDotRadius: 3, datasetStroke: false, scaleType:"date", scaleDateFormat:"mm-dd-yyyy", scaleTimeFormat:"HH:MM:ss", scaleDateTimeFormat:"mm-dd-yyyy HH:MM:ss", useUtc:false});
+
+			var accel_data = {
+				labels : ["+X", "+Y", "+Z", "-X", "-Y", "-Z"],
+				
+				datasets : [
+					{
+						fillColor: "rgba(102,34, 124, 0.2",
+						strokeColor: "rgba(102, 34, 124, 1",
+						pointColor : "rgba(220, 220, 220, 1)",
+						pointStrokeColor: "#fff",
+						data : [0,0,0,0,0,0],
+						
+					}
+				]
+			};
+					
+			var accelDom = document.getElementById("accelcanvas").getContext("2d");
+			var accel_chart = new Chart(accelDom).Radar(accel_data,  {animation:false, scaleLineColor : "rgba(0,0,0,0.2)", scaleOverride: true, scaleSteps:4, scaleStepWidth:512, scaleStartValue:0});
+
+			var socket = new WebSocket('ws://websocket.gatd.io/4e0e83d0-b464-4e25-ba10-b4165b387c26');
+			
+			socket.onopen = function() {
+				console.log("Connected");
+				socket.send(JSON.stringify({id: {$gte:0}, '_gatd.time_utc_timestamp' : {$gte: ((new Date).getTime() - historyTime)*1000} }) );
+			};
+			
+			socket.onmessage = function (e) {
+				var obj = JSON.parse(e.data);
+				addData(JSON.parse(e.data), historyTime);
+				temp_chart.update();
+				pir_chart.update();
+				accel_chart.update();
+				//temp_data.data = sensors[1].temp;
+				
+				//temp_chart = new Chart(ctx).Scatter(temp_data, {scaleType: "date", scaleDateFormat:"mm-dd-yyyy", scaleTimeFormat:"HH:MM:ss", scaleDateTimeFormat:"mm-dd-yyyy HH:MM:ss", useUtc:false});
+			}	
+		
+			socket.onclose = function() {
+
+				console.log("Disconnected");
+			}
+
+		</script>
+		
+	</body>
+
+
+</html>
