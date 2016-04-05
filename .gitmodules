@@ -1,0 +1,3 @@
+[submodule "web/js/libraries/Chart.Scatter"]
+	path = web/js/libraries/Chart.Scatter
+	url = git://github.com/dima117/Chart.Scatter.git
