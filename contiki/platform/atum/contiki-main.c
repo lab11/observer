@@ -33,9 +33,9 @@
 #include "reg.h"
 #include "ieee-addr.h"
 #include "lpm.h"
-#include "spi.h"
-#include "fm25l04b.h"
-#include "rv3049.h"
+//#include "spi.h"
+//#include "fm25l04b.h"
+//#include "rv3049.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -106,9 +106,9 @@ main(void)
 
   watchdog_init();
   //button_sensor_init();
-  spi_init();
-  fm25l04b_init();
-  rv3049_init();
+  //spi_init();
+  //fm25l04b_init();
+  //rv3049_init();
 
   /*
    * Character I/O Initialization.
